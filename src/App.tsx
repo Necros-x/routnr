@@ -15,9 +15,9 @@ import type { ActiveTab } from './types/gymnastics';
 
 const NAV_SLIDE = {
   type: 'spring' as const,
-  stiffness: 520,
-  damping: 42,
-  mass: 0.72,
+  stiffness: 500,
+  damping: 28,
+  mass: 0.78,
 };
 
 function MainAppContent() {
