@@ -17,7 +17,7 @@ export const HomeScreen: React.FC = () => {
     <div className="space-y-9">
       <section>
         <p className="text-xs font-medium text-[var(--text-tertiary)]">Name —</p>
-        <h1 className="font-display mt-2 text-4xl font-semibold uppercase leading-none tracking-[-0.05em] sm:text-5xl">
+        <h1 className="font-display mt-2 text-3xl font-semibold uppercase leading-none tracking-[-0.05em] sm:text-4xl">
           Welcome back.
         </h1>
       </section>
@@ -51,14 +51,14 @@ export const HomeScreen: React.FC = () => {
                   <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
                     D Score
                   </p>
-                  <p className="mt-1 text-2xl font-semibold tracking-[-0.05em]">
+                  <p className="mt-1 text-xl font-semibold tracking-[-0.05em]">
                     {latestRoutine.summary.totalDScore.toFixed(2)}
                   </p>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-xl font-semibold tracking-[-0.035em] sm:text-2xl">
+                <h3 className="text-lg font-semibold tracking-[-0.035em] sm:text-xl">
                   {latestRoutine.name}
                 </h3>
                 <div className="mt-3 flex items-center justify-between gap-4">
