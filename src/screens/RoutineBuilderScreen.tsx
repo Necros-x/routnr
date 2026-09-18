@@ -1,27 +1,16 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ChevronLeft,
-  Plus,
-  ArrowUp,
-  ArrowDown,
-  Trash2,
-  GripVertical,
-  Edit2,
-  Sparkles,
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
   Info,
-  Check,
-  Zap,
+  Link2,
+  Plus,
+  Search,
+  Trash2,
 } from 'lucide-react';
 import { useGymnasticsStore } from '../hooks/useGymnasticsStore';
-import { RoutineScoreBreakdownCard } from '../components/RoutineScoreBreakdownCard';
-import { GlassCard } from '../components/ui/GlassCard';
-import { PillButton } from '../components/ui/PillButton';
-import { TagChip } from '../components/ui/TagChip';
-import { EmptyState } from '../components/ui/EmptyState';
-import { SkillPickerModal } from './SkillPickerModal';
-import { GymnasticSkill } from '../types/gymnastics';
-import { getApparatusCode } from '../components/ui/ApparatusPill';
-import { calculateDynamicDScore } from '../utils/scoreCalculator';
+import { DIFFICULTY_LEVELS } from '../data/mockSkills';
 
 interface RoutineBuilderScreenProps {
   onBack: () => void;
@@ -30,536 +19,318 @@ interface RoutineBuilderScreenProps {
 export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBack }) => {
   const {
     getActiveRoutine,
+    skills,
     addSkillToRoutine,
     removeSkillFromRoutine,
     updateSkillConnectionBonus,
     moveSkillOrder,
-    reorderSkills,
     updateRoutineTitle,
     updateRoutineNotes,
     setSelectedSkill,
+    markSkillViewed,
   } = useGymnasticsStore();
 
   const routine = getActiveRoutine();
-  const [isPickerOpen, setPickerOpen] = useState(false);
-  const [pickerInitialGroup, setPickerInitialGroup] = useState<number | null>(null);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editedTitle, setEditedTitle] = useState(routine?.name || '');
-  const [isEditingNotes, setIsEditingNotes] = useState(false);
-  const [editedNotes, setEditedNotes] = useState(routine?.notes || '');
+  const [query, setQuery] = useState('');
+  const [difficulty, setDifficulty] = useState('All');
+  const [title, setTitle] = useState(routine?.name ?? '');
+  const [notes, setNotes] = useState(routine?.notes ?? '');
 
-  // Drag-and-drop reordering state
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [dropPosition, setDropPosition] = useState<'above' | 'below' | null>(null);
-  const touchStartY = useRef<number>(0);
-  const touchStartIndex = useRef<number | null>(null);
+  useEffect(() => {
+    setTitle(routine?.name ?? '');
+    setNotes(routine?.notes ?? '');
+  }, [routine?.id, routine?.name, routine?.notes]);
 
-  // Dynamic D-Score breakdown calculated directly from routine skills
-  const dynamicScore = useMemo(() => {
-    if (!routine) return null;
-    return calculateDynamicDScore(routine.skills, routine.apparatus);
-  }, [routine?.skills, routine?.apparatus]);
+  const availableSkills = useMemo(() => {
+    if (!routine) return [];
+    const normalized = query.trim().toLowerCase();
 
-  const calculateDropDestination = (
-    fromIndex: number,
-    targetIndex: number,
-    position: 'above' | 'below'
-  ): number => {
-    if (fromIndex === targetIndex) return fromIndex;
-    if (position === 'above') {
-      return fromIndex < targetIndex ? targetIndex - 1 : targetIndex;
-    } else {
-      return fromIndex < targetIndex ? targetIndex : targetIndex + 1;
-    }
-  };
-
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', index.toString());
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (draggedIndex === null) return;
-
-    if (dragOverIndex !== index) {
-      setDragOverIndex(index);
-    }
-    const rect = e.currentTarget.getBoundingClientRect();
-    const offset = e.clientY - rect.top;
-    setDropPosition(offset < rect.height / 2 ? 'above' : 'below');
-  };
-
-  const handleDragLeave = (e: React.DragEvent, index: number) => {
-    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-    if (dragOverIndex === index) {
-      setDragOverIndex(null);
-      setDropPosition(null);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
-    e.preventDefault();
-    if (draggedIndex === null || !routine) return;
-
-    const pos = dropPosition || 'below';
-    let dest = calculateDropDestination(draggedIndex, targetIndex, pos);
-    dest = Math.max(0, Math.min(dest, routine.skills.length - 1));
-
-    if (draggedIndex !== dest) {
-      reorderSkills(routine.id, draggedIndex, dest);
-    }
-
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-    setDropPosition(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-    setDropPosition(null);
-  };
-
-  // Touch handlers for mobile/tablet drag-and-drop
-  const handleTouchStart = (index: number, e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-    touchStartIndex.current = index;
-    setDraggedIndex(index);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartIndex.current === null) return;
-    const currentY = e.touches[0].clientY;
-    const element = document.elementFromPoint(e.touches[0].clientX, currentY);
-    const card = element?.closest('[data-skill-index]');
-    if (card) {
-      const targetIndex = Number(card.getAttribute('data-skill-index'));
-      if (!isNaN(targetIndex)) {
-        setDragOverIndex(targetIndex);
-        const rect = card.getBoundingClientRect();
-        setDropPosition(currentY - rect.top < rect.height / 2 ? 'above' : 'below');
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (
-      touchStartIndex.current !== null &&
-      dragOverIndex !== null &&
-      routine &&
-      touchStartIndex.current !== dragOverIndex
-    ) {
-      const pos = dropPosition || 'below';
-      let dest = calculateDropDestination(touchStartIndex.current, dragOverIndex, pos);
-      dest = Math.max(0, Math.min(dest, routine.skills.length - 1));
-      if (touchStartIndex.current !== dest) {
-        reorderSkills(routine.id, touchStartIndex.current, dest);
-      }
-    }
-    touchStartIndex.current = null;
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-    setDropPosition(null);
-  };
+    return skills.filter((skill) => {
+      const matchesApparatus = skill.apparatus === routine.apparatus;
+      const matchesDifficulty = difficulty === 'All' || skill.difficulty === difficulty;
+      const matchesQuery =
+        !normalized ||
+        skill.name.toLowerCase().includes(normalized) ||
+        skill.figCode.toLowerCase().includes(normalized) ||
+        skill.aliases.some((alias) => alias.toLowerCase().includes(normalized));
+      return matchesApparatus && matchesDifficulty && matchesQuery;
+    });
+  }, [difficulty, query, routine, skills]);
 
   if (!routine) {
     return (
-      <div className="p-4 text-center pb-24">
-        <EmptyState
-          icon={<Info className="w-6 h-6" />}
-          title="No routine selected"
-          description="Select an existing routine or create a new one to start building."
-          actionText="Back to Routines"
-          onAction={onBack}
-        />
+      <div className="surface rounded-[28px] px-6 py-16 text-center">
+        <h2 className="text-lg font-semibold">Routine not found</h2>
+        <button type="button" onClick={onBack} className="mt-5 rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white">
+          Back to routines
+        </button>
       </div>
     );
   }
 
-  const handleSaveTitle = () => {
-    if (editedTitle.trim()) {
-      updateRoutineTitle(routine.id, editedTitle.trim());
-    }
-    setIsEditingTitle(false);
+  const saveTitle = () => {
+    const next = title.trim() || routine.name;
+    setTitle(next);
+    if (next !== routine.name) updateRoutineTitle(routine.id, next);
   };
 
-  const handleSaveNotes = () => {
-    updateRoutineNotes(routine.id, editedNotes);
-    setIsEditingNotes(false);
+  const saveNotes = () => {
+    if (notes !== (routine.notes ?? '')) updateRoutineNotes(routine.id, notes);
   };
-
-  const handleSkillPicked = (skill: GymnasticSkill) => {
-    addSkillToRoutine(routine.id, skill);
-    setPickerOpen(false);
-  };
-
-  const handleOpenPickerForGroup = (groupNumber: 1 | 2 | 3 | 4) => {
-    setPickerInitialGroup(groupNumber);
-    setPickerOpen(true);
-  };
-
-  const handleOpenGeneralPicker = () => {
-    setPickerInitialGroup(null);
-    setPickerOpen(true);
-  };
-
-  const code = getApparatusCode(routine.apparatus);
 
   return (
-    <div className="space-y-5 pb-32">
-      {/* Top Bar with Back action & apparatus */}
-      <div className="flex items-center justify-between pt-1">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-xs font-medium text-neutral-300 hover:text-white transition-colors cursor-pointer"
-        >
-          <ChevronLeft className="w-3.5 h-3.5" />
-          <span>Routines</span>
-        </button>
-
-        <div className="flex items-center gap-2">
-          <TagChip variant="accent" size="xs">
-            {code} · {routine.apparatus}
-          </TagChip>
-          <span className="text-[11px] font-mono text-neutral-400">
-            {routine.skills.length} skills
-          </span>
-        </div>
-      </div>
-
-      {/* Routine Title Header Area */}
-      <div className="space-y-1">
-        {isEditingTitle ? (
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={editedTitle}
-              onChange={(e) => setEditedTitle(e.target.value)}
-              onBlur={handleSaveTitle}
-              onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
-              autoFocus
-              className="flex-1 text-xl font-bold bg-white/10 text-white rounded-xl px-3 py-1.5 border border-white/30 focus:outline-none font-display"
-            />
-            <button
-              type="button"
-              onClick={handleSaveTitle}
-              className="h-9 px-3 rounded-xl bg-white text-black text-xs font-semibold"
-            >
-              Save
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between group">
-            <h1
-              onClick={() => {
-                setEditedTitle(routine.name);
-                setIsEditingTitle(true);
-              }}
-              className="text-xl sm:text-2xl font-bold text-white tracking-tight font-display cursor-pointer hover:text-neutral-200 flex items-center gap-2"
-              title="Click to rename"
-            >
-              <span>{routine.name}</span>
-              <Edit2 className="w-3.5 h-3.5 text-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </h1>
-          </div>
-        )}
-
-        {/* Routine Coaching Notes */}
-        {isEditingNotes ? (
-          <div className="mt-2 flex items-center gap-2">
-            <input
-              type="text"
-              value={editedNotes}
-              onChange={(e) => setEditedNotes(e.target.value)}
-              onBlur={handleSaveNotes}
-              onKeyDown={(e) => e.key === 'Enter' && handleSaveNotes()}
-              placeholder="Add tactical or choreography notes..."
-              autoFocus
-              className="flex-1 text-xs bg-white/10 text-neutral-200 rounded-lg px-2.5 py-1 border border-white/20 focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={handleSaveNotes}
-              className="text-xs px-2.5 py-1 bg-white/20 text-white rounded-lg"
-            >
-              Done
-            </button>
-          </div>
-        ) : (
-          <p
-            onClick={() => {
-              setEditedNotes(routine.notes || '');
-              setIsEditingNotes(true);
-            }}
-            className="text-xs text-neutral-400 cursor-pointer hover:text-neutral-200 transition-colors pt-0.5"
-            title="Click to edit notes"
+    <div className="space-y-5">
+      <section className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div className="min-w-0">
+          <button
+            type="button"
+            onClick={onBack}
+            className="mb-4 inline-flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
           >
-            {routine.notes || '+ Add routine execution notes...'}
-          </p>
-        )}
-      </div>
-
-      {/* Responsive Two-Column Layout: Visual Score Breakdown on left, Element Sequence on right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: D-Score & Composition Requirements (sticky on desktop) */}
-        <div className="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-20 space-y-4">
-          <RoutineScoreBreakdownCard
-            routine={routine}
-            onAddSkillForGroup={handleOpenPickerForGroup}
+            <ArrowLeft className="h-4 w-4" />
+            Back to routines
+          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-secondary)]">
+              {routine.apparatus}
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">{routine.skills.length} elements</span>
+          </div>
+          <input
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            onBlur={saveTitle}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.currentTarget.blur();
+            }}
+            className="font-display mt-2 w-full max-w-3xl bg-transparent text-3xl font-semibold tracking-[-0.04em] outline-none sm:text-4xl"
+            aria-label="Routine title"
           />
         </div>
 
-        {/* Right Column: Element Sequence & Management */}
-        <div className="lg:col-span-7 xl:col-span-7 space-y-4">
-          {/* Element Sequence Section Header with Add Skill Action */}
-      <div className="flex items-center justify-between pt-1">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold text-white tracking-tight font-display">
-              Element Sequence
-            </h2>
-            {routine.skills.length > 1 && (
-              <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-mono text-neutral-400 bg-white/[0.04] px-2 py-0.5 rounded-full border border-white/[0.07]">
-                <GripVertical className="w-3 h-3 text-neutral-400" />
-                <span>Drag to reorder</span>
-              </span>
-            )}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          {[
+            ['DV', routine.summary.difficultyValue],
+            ['EG', routine.summary.elementGroupValue],
+            ['CV', routine.summary.connectionBonus],
+          ].map(([label, value]) => (
+            <div key={label as string} className="surface-soft min-w-[86px] rounded-[18px] px-4 py-3">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">{label}</p>
+              <p className="mt-1 text-lg font-semibold tracking-[-0.04em]">{Number(value).toFixed(1)}</p>
+            </div>
+          ))}
+          <div className="min-w-[108px] rounded-[18px] bg-[var(--accent)] px-4 py-3 text-white">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-white/60">D score</p>
+            <p className="mt-1 text-2xl font-semibold tracking-[-0.05em]">{routine.summary.totalDScore.toFixed(2)}</p>
           </div>
-          <p className="text-xs text-neutral-400 mt-0.5">
-            Ordered sequence as performed in competition
-          </p>
         </div>
+      </section>
 
-        <PillButton
-          variant="primary"
-          size="sm"
-          onClick={handleOpenGeneralPicker}
-          icon={<Plus className="w-3.5 h-3.5 text-black" />}
-        >
-          Add Element
-        </PillButton>
-      </div>
+      <section className="grid min-h-[620px] gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
+        <div className="surface overflow-hidden rounded-[28px]">
+          <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-4 sm:px-5">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">Sequence</p>
+              <h3 className="mt-0.5 text-base font-semibold">Routine order</h3>
+            </div>
+            <span className="rounded-full bg-[var(--surface-soft)] px-3 py-1.5 text-[10px] font-semibold text-[var(--text-secondary)]">
+              Top to bottom
+            </span>
+          </div>
 
-      {/* Skill sequence items */}
-      {routine.skills.length === 0 ? (
-        <EmptyState
-          icon={<Plus className="w-6 h-6" />}
-          title="No elements in this routine"
-          description="Add elements from the gymnastics library to calculate D-score and verify element group requirements."
-          actionText="Add First Skill"
-          onAction={handleOpenGeneralPicker}
-        />
-      ) : (
-        <div className="space-y-2.5">
-          {routine.skills.map((item, index) => {
-            const isFirst = index === 0;
-            const isLast = index === routine.skills.length - 1;
-            const isBeingDragged = draggedIndex === index;
-            const isDragTarget =
-              dragOverIndex === index && draggedIndex !== null && draggedIndex !== index;
+          {routine.skills.length === 0 ? (
+            <div className="flex min-h-[470px] flex-col items-center justify-center px-6 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-[var(--accent-soft)]">
+                <Plus className="h-5 w-5" />
+              </div>
+              <h4 className="mt-5 text-base font-semibold">Start with your first element</h4>
+              <p className="mt-2 max-w-sm text-sm leading-6 text-[var(--text-secondary)]">
+                Search the {routine.apparatus} library on the right and add skills directly into this sequence.
+              </p>
+            </div>
+          ) : (
+            <div>
+              {routine.skills.map((item, index) => {
+                const bonus = item.connectionBonus || 0;
+                return (
+                  <div
+                    key={item.instanceId}
+                    className={`flex items-center gap-3 px-3 py-3 sm:gap-4 sm:px-5 sm:py-4 ${index > 0 ? 'border-t border-[var(--border-subtle)]' : ''}`}
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[var(--surface-soft)] text-[11px] font-bold text-[var(--text-tertiary)]">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
 
-            return (
-              <div
-                key={item.instanceId}
-                data-skill-index={index}
-                className="relative"
-              >
-                {/* Luminous Drop Indicator Line: Above */}
-                {isDragTarget && dropPosition === 'above' && (
-                  <div className="absolute -top-1.5 inset-x-2 h-1 bg-white rounded-full shadow-[0_0_12px_rgba(255,255,255,0.95)] z-30 pointer-events-none animate-pulse" />
-                )}
-
-                <GlassCard
-                  variant="subtle"
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragLeave={(e) => handleDragLeave(e, index)}
-                  onDrop={(e) => handleDrop(e, index)}
-                  onDragEnd={handleDragEnd}
-                  className={`p-3 sm:p-4 transition-all duration-150 select-none ${
-                    isBeingDragged
-                      ? 'opacity-25 scale-[0.98] border-dashed border-white/50 bg-white/[0.02] shadow-none ring-1 ring-white/20'
-                      : isDragTarget
-                      ? 'border-white/50 bg-white/[0.07] ring-1 ring-white/30 scale-[1.01] shadow-lg shadow-black/40'
-                      : 'border-white/[0.08] hover:border-white/20'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    {/* Drag Grip Handle */}
-                    <div
-                      className="p-1 -ml-1 text-neutral-500 hover:text-white cursor-grab active:cursor-grabbing hover:bg-white/10 rounded-lg transition-colors shrink-0 touch-none"
-                      title="Drag to rearrange element sequence"
-                      aria-label="Drag handle"
-                      onTouchStart={(e) => handleTouchStart(index, e)}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        markSkillViewed(item.skill);
+                        setSelectedSkill(item.skill);
+                      }}
+                      className="min-w-0 flex-1 text-left"
                     >
-                      <GripVertical className="w-4 h-4" />
-                    </div>
-
-                    {/* Order indicator */}
-                    <div className="w-7 h-7 rounded-full bg-white/[0.08] border border-white/[0.12] flex items-center justify-center text-xs font-mono font-bold text-neutral-200 shrink-0">
-                      {index + 1}
-                    </div>
-
-                    {/* Skill information */}
-                    <div
-                      onClick={() => setSelectedSkill(item.skill)}
-                      className="flex-1 min-w-0 cursor-pointer"
-                    >
-                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                        <TagChip variant="difficulty" size="xs">
-                          {item.skill.difficulty} (+{item.skill.difficultyValue.toFixed(1)})
-                        </TagChip>
-
-                        <span className="text-[10px] font-mono text-neutral-400">
-                          FIG {item.skill.figCode}
-                        </span>
-
-                        {/* Dynamic FIG Counting Status */}
-                        {(() => {
-                          const countingRank = dynamicScore?.countingSkills.findIndex(
-                            (cs) => cs.instanceId === item.instanceId
-                          );
-                          const isRepeated = dynamicScore?.repeatedSkills.some(
-                            (rs) => rs.instanceId === item.instanceId
-                          );
-
-                          if (isRepeated) {
-                            return (
-                              <span className="text-[10px] font-mono text-red-300 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">
-                                Duplicate (0.0 DV)
-                              </span>
-                            );
-                          }
-                          if (countingRank !== undefined && countingRank >= 0) {
-                            return (
-                              <span className="text-[10px] font-mono text-emerald-300 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                                Top 8 (#{countingRank + 1})
-                              </span>
-                            );
-                          }
-                          return (
-                            <span className="text-[10px] font-mono text-neutral-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/10">
-                              Reserve
-                            </span>
-                          );
-                        })()}
-
-                        {/* Interactive Connection Value (CV) Button */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const nextBonus =
-                              item.connectionBonus === 0
-                                ? 0.1
-                                : item.connectionBonus === 0.1
-                                ? 0.2
-                                : 0;
-                            updateSkillConnectionBonus(routine.id, item.instanceId, nextBonus);
-                          }}
-                          title="Click to toggle Connection Value bonus (0.0 -> +0.1 -> +0.2 -> 0.0)"
-                          className={`inline-flex items-center gap-0.5 text-[10px] font-mono px-1.5 py-0.5 rounded border transition-all cursor-pointer ${
-                            item.connectionBonus > 0
-                              ? 'text-amber-300 bg-amber-400/10 border-amber-400/30 hover:bg-amber-400/20'
-                              : 'text-neutral-500 hover:text-amber-400 bg-white/[0.02] border-white/5 hover:border-amber-400/20'
-                          }`}
-                        >
-                          <Zap className="w-2.5 h-2.5" />
-                          <span>
-                            {item.connectionBonus > 0
-                              ? `+${item.connectionBonus.toFixed(1)} CV`
-                              : '+CV'}
-                          </span>
-                        </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="truncate text-sm font-semibold">{item.skill.name}</span>
+                        <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[9px] font-bold">{item.skill.difficulty}</span>
                       </div>
-
-                      <h3 className="text-sm font-semibold text-white truncate">
-                        {item.skill.name}
-                      </h3>
-
-                      <p className="text-[11px] text-neutral-400 font-mono truncate mt-0.5">
-                        {item.skill.elementGroup}
+                      <p className="mt-1 truncate text-[11px] text-[var(--text-secondary)]">
+                        Group {item.skill.elementGroupNumber} · FIG {item.skill.figCode} · {item.skill.difficultyValue.toFixed(1)} DV
                       </p>
-                    </div>
+                    </button>
 
-                    {/* Controls: Reorder Up/Down & Delete */}
-                    <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = bonus === 0 ? 0.1 : bonus === 0.1 ? 0.2 : 0;
+                        updateSkillConnectionBonus(routine.id, item.instanceId, next);
+                      }}
+                      className={`hidden h-8 items-center gap-1 rounded-full px-2.5 text-[10px] font-semibold sm:inline-flex ${bonus > 0 ? 'bg-[var(--accent)] text-white' : 'bg-[var(--surface-soft)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
+                      title="Cycle connection value: 0, +0.1, +0.2"
+                    >
+                      <Link2 className="h-3.5 w-3.5" />
+                      {bonus > 0 ? `+${bonus.toFixed(1)}` : 'CV'}
+                    </button>
+
+                    <div className="flex shrink-0 items-center gap-0.5">
                       <button
                         type="button"
-                        disabled={isFirst}
+                        disabled={index === 0}
                         onClick={() => moveSkillOrder(routine.id, index, 'up')}
-                        className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:pointer-events-none transition-colors"
-                        title="Move element up"
-                        aria-label="Move up"
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)] hover:text-[var(--text-primary)] disabled:opacity-20"
+                        aria-label="Move skill up"
                       >
-                        <ArrowUp className="w-3.5 h-3.5" />
+                        <ChevronUp className="h-4 w-4" />
                       </button>
-
                       <button
                         type="button"
-                        disabled={isLast}
+                        disabled={index === routine.skills.length - 1}
                         onClick={() => moveSkillOrder(routine.id, index, 'down')}
-                        className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 disabled:opacity-20 disabled:pointer-events-none transition-colors"
-                        title="Move element down"
-                        aria-label="Move down"
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)] hover:text-[var(--text-primary)] disabled:opacity-20"
+                        aria-label="Move skill down"
                       >
-                        <ArrowDown className="w-3.5 h-3.5" />
+                        <ChevronDown className="h-4 w-4" />
                       </button>
-
                       <button
                         type="button"
                         onClick={() => removeSkillFromRoutine(routine.id, item.instanceId)}
-                        className="p-1.5 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        title="Remove element"
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-tertiary)] hover:bg-[#fff0f0] hover:text-[var(--danger)]"
                         aria-label="Remove skill"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
-                </GlassCard>
+                );
+              })}
+            </div>
+          )}
 
-                {/* Luminous Drop Indicator Line: Below */}
-                {isDragTarget && dropPosition === 'below' && (
-                  <div className="absolute -bottom-1.5 inset-x-2 h-1 bg-white rounded-full shadow-[0_0_12px_rgba(255,255,255,0.95)] z-30 pointer-events-none animate-pulse" />
-                )}
-              </div>
-            );
-          })}
-
-          {/* Quick Floating Add Element trigger */}
-          <div className="pt-2 flex justify-center">
-            <button
-              type="button"
-              onClick={handleOpenGeneralPicker}
-              className="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-white/[0.05] border border-dashed border-white/20 text-xs font-medium text-neutral-300 hover:text-white hover:bg-white/10 hover:border-white/40 transition-all cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Insert Next Element</span>
-            </button>
+          <div className="border-t border-[var(--border-subtle)] p-4 sm:p-5">
+            <label className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--text-tertiary)]">Routine notes</label>
+            <textarea
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              onBlur={saveNotes}
+              rows={3}
+              placeholder="Landing cues, connection options, training notes…"
+              className="mt-2 w-full resize-none rounded-[16px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] p-3 text-sm leading-6 outline-none transition-colors placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-strong)]"
+            />
           </div>
         </div>
-      )}
-        </div>
-      </div>
 
-      {/* Skill Picker Modal */}
-      <SkillPickerModal
-        isOpen={isPickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onSelectSkill={handleSkillPicked}
-        routineApparatus={routine.apparatus}
-        initialElementGroup={pickerInitialGroup}
-        alreadyAddedSkillIds={routine.skills.map((s) => s.skillId)}
-      />
+        <aside className="surface flex min-h-[620px] flex-col overflow-hidden rounded-[28px]">
+          <div className="border-b border-[var(--border-subtle)] p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">Skill library</p>
+                <h3 className="mt-0.5 text-base font-semibold">{routine.apparatus}</h3>
+              </div>
+              <span className="text-[10px] font-semibold text-[var(--text-tertiary)]">{availableSkills.length} found</span>
+            </div>
+
+            <div className="mt-4 flex h-11 items-center gap-2.5 rounded-[15px] bg-[var(--surface-soft)] px-3.5">
+              <Search className="h-4 w-4 text-[var(--text-tertiary)]" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search this apparatus…"
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-tertiary)]"
+              />
+            </div>
+
+            <div className="mt-3 flex gap-1 overflow-x-auto no-scrollbar">
+              <button
+                type="button"
+                onClick={() => setDifficulty('All')}
+                className={`h-8 shrink-0 rounded-full px-3 text-[10px] font-semibold ${difficulty === 'All' ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)]'}`}
+              >
+                All
+              </button>
+              {DIFFICULTY_LEVELS.map((level) => (
+                <button
+                  key={level.letter}
+                  type="button"
+                  onClick={() => setDifficulty(level.letter)}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${difficulty === level.letter ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)]'}`}
+                >
+                  {level.letter}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {availableSkills.length === 0 ? (
+              <div className="px-6 py-12 text-center">
+                <Search className="mx-auto h-5 w-5 text-[var(--text-tertiary)]" />
+                <p className="mt-3 text-sm font-semibold">No matching elements</p>
+                <p className="mt-1 text-xs text-[var(--text-secondary)]">Try a different term or difficulty.</p>
+              </div>
+            ) : (
+              availableSkills.map((skill, index) => (
+                <div
+                  key={skill.id}
+                  className={`flex items-center gap-3 p-3.5 ${index > 0 ? 'border-t border-[var(--border-subtle)]' : ''}`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      markSkillViewed(skill);
+                      setSelectedSkill(skill);
+                    }}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[var(--accent-soft)] text-xs font-bold">{skill.difficulty}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-semibold">{skill.name}</span>
+                      <span className="mt-1 block truncate text-[10px] text-[var(--text-tertiary)]">G{skill.elementGroupNumber} · FIG {skill.figCode}</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      markSkillViewed(skill);
+                      setSelectedSkill(skill);
+                    }}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)] hover:text-[var(--text-primary)]"
+                    aria-label={`View ${skill.name}`}
+                  >
+                    <Info className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => addSkillToRoutine(routine.id, skill)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent)] text-white transition-transform hover:-translate-y-0.5"
+                    aria-label={`Add ${skill.name}`}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </aside>
+      </section>
     </div>
   );
 };
