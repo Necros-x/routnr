@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { House, Search, ListChecks, Menu, Plus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { GymnasticsStoreProvider, useGymnasticsStore } from './hooks/useGymnasticsStore';
@@ -31,6 +31,7 @@ function MainAppContent() {
   } = useGymnasticsStore();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [edgeCompression, setEdgeCompression] = useState<0 | 3 | null>(null);
 
   const changeTab = (tab: ActiveTab) => {
     if (tab !== 'routines') setActiveRoutineId(null);
@@ -50,6 +51,26 @@ function MainAppContent() {
       : activeTab === 'skills'
         ? 1
         : 2;
+
+  const previousNavIndex = useRef(activeNavIndex);
+
+  useEffect(() => {
+    const previous = previousNavIndex.current;
+
+    if (previous !== activeNavIndex && (activeNavIndex === 0 || activeNavIndex === 3)) {
+      setEdgeCompression(activeNavIndex);
+
+      const timer = window.setTimeout(() => {
+        setEdgeCompression(null);
+      }, 440);
+
+      previousNavIndex.current = activeNavIndex;
+      return () => window.clearTimeout(timer);
+    }
+
+    setEdgeCompression(null);
+    previousNavIndex.current = activeNavIndex;
+  }, [activeNavIndex]);
 
   const itemClass =
     'relative z-10 flex h-12 items-center justify-center rounded-full transition-colors duration-150';
@@ -104,8 +125,34 @@ function MainAppContent() {
           <motion.div
             aria-hidden="true"
             className="pointer-events-none absolute inset-y-0 left-0 w-1/4 rounded-full bg-[var(--accent)]"
-            animate={{ x: `${activeNavIndex * 100}%` }}
-            transition={NAV_SLIDE}
+            style={{
+              transformOrigin:
+                edgeCompression === 0
+                  ? 'right center'
+                  : edgeCompression === 3
+                    ? 'left center'
+                    : 'center',
+            }}
+            animate={{
+              x: `${activeNavIndex * 100}%`,
+              scaleX: edgeCompression !== null ? 0.82 : 1,
+            }}
+            transition={{
+              x: NAV_SLIDE,
+              scaleX: edgeCompression !== null
+                ? {
+                    type: 'spring',
+                    stiffness: 620,
+                    damping: 24,
+                    mass: 0.62,
+                  }
+                : {
+                    type: 'spring',
+                    stiffness: 420,
+                    damping: 30,
+                    mass: 0.7,
+                  },
+            }}
           />
 
           <button
