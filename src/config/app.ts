@@ -1,7 +1,7 @@
 export const APP_CONFIG = {
-  name: 'Routine Builder',
-  shortName: 'RB',
+  name: 'ROUTNR',
+  shortName: 'R',
   eyebrow: 'Gymnastics',
   codeCycle: 'FIG 2025–2028',
-  description: 'Build gymnastics routines and search the skill library.',
+  description: 'Search gymnastics skills and build competition routines in one focused workspace.',
 } as const;
