@@ -112,7 +112,7 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBa
           onKeyDown={(event) => {
             if (event.key === 'Enter') event.currentTarget.blur();
           }}
-          className="font-display mt-3 w-full bg-transparent text-4xl font-semibold tracking-[-0.05em] outline-none"
+          className="font-display mt-3 w-full bg-transparent text-2xl font-semibold tracking-[-0.05em] outline-none sm:text-3xl"
           aria-label="Routine title"
         />
       </section>
