@@ -52,7 +52,7 @@ function MainAppContent() {
         : 2;
 
   const itemClass =
-    'relative z-10 flex h-12 items-center justify-center rounded-full transition-colors duration-150';
+    'relative z-10 flex h-12 items-center justify-center rounded-[24px] transition-colors duration-150';
 
   return (
     <div className="min-h-screen bg-[var(--app-bg)] text-[var(--text-primary)]">
@@ -65,7 +65,7 @@ function MainAppContent() {
             aria-label="ROUTNR home"
           >
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-medium)] bg-white text-sm font-black tracking-[-0.08em]">
+              <span className="glass-float flex h-9 w-9 items-center justify-center rounded-[18px] text-sm font-black tracking-[-0.08em]">
                 R
               </span>
               <div>
@@ -80,7 +80,7 @@ function MainAppContent() {
           <button
             type="button"
             onClick={() => setCreateRoutineModalOpen(true)}
-            className="flex h-10 items-center justify-center rounded-full border border-[var(--border-medium)] bg-white px-4 text-[var(--text-primary)] shadow-sm transition-transform hover:-translate-y-0.5"
+            className="glass-float flex h-10 items-center justify-center rounded-[20px] px-4 text-[var(--text-primary)] transition-transform hover:-translate-y-0.5"
             aria-label="Create routine"
           >
             <Plus className="h-4 w-4" />
@@ -99,11 +99,11 @@ function MainAppContent() {
         </main>
       </div>
 
-      <nav className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-full border border-[var(--border-medium)] bg-white/95 p-1.5 shadow-[0_18px_45px_rgba(28,28,25,0.12)] backdrop-blur-xl">
-        <div className="relative grid grid-cols-4 overflow-hidden rounded-full">
+      <nav className="glass-nav fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-[30px] p-1.5">
+        <div className="relative grid grid-cols-4 overflow-hidden rounded-[24px]">
           <motion.div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 left-0 w-1/4 rounded-full bg-[var(--accent)]"
+            className="pointer-events-none absolute inset-y-0 left-0 w-1/4 rounded-[24px] bg-[var(--accent)]"
             animate={{ x: `${activeNavIndex * 100}%` }}
             transition={NAV_SLIDE}
           />
@@ -202,7 +202,7 @@ function MainAppContent() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-x-4 bottom-[88px] z-40 mx-auto max-w-md rounded-[24px] border border-[var(--border-medium)] bg-white p-3 shadow-[0_18px_45px_rgba(28,28,25,0.12)]"
+            className="glass-float fixed inset-x-4 bottom-[88px] z-40 mx-auto max-w-md rounded-[24px] p-3"
           >
             <button
               type="button"
@@ -210,7 +210,7 @@ function MainAppContent() {
                 setMenuOpen(false);
                 setCreateRoutineModalOpen(true);
               }}
-              className="flex w-full items-center justify-between rounded-full px-4 py-3 text-left hover:bg-[var(--surface-soft)]"
+              className="flex w-full items-center justify-between rounded-[12px] px-4 py-3 text-left hover:bg-white/55"
             >
               <div>
                 <p className="text-sm font-semibold">New routine</p>
@@ -221,7 +221,7 @@ function MainAppContent() {
               <Plus className="h-4 w-4" />
             </button>
 
-            <div className="mt-1 rounded-full bg-[var(--surface-soft)] px-4 py-3">
+            <div className="mt-1 rounded-[12px] bg-white/45 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
                 Code cycle
               </p>
