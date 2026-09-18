@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { House, Search, ListChecks, Menu, Plus, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Download, House, Search, ListChecks, Menu, Plus, UserRound, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { GymnasticsStoreProvider, useGymnasticsStore } from './hooks/useGymnasticsStore';
 import { HomeScreen } from './screens/HomeScreen';
@@ -10,7 +10,10 @@ import { MyRoutinesScreen } from './screens/MyRoutinesScreen';
 import { RoutineBuilderScreen } from './screens/RoutineBuilderScreen';
 import { SkillDetailModal } from './screens/SkillDetailModal';
 import { CreateRoutineModal } from './screens/CreateRoutineModal';
+import { DownloadManagerModal } from './components/DownloadManagerModal';
+import { ProfileModal } from './components/ProfileModal';
 import { APP_CONFIG } from './config/app';
+import { OFFLINE_STORAGE_KEY } from './config/code';
 import type { ActiveTab } from './types/gymnastics';
 
 const NAV_SLIDE = {
@@ -31,6 +34,22 @@ function MainAppContent() {
   } = useGymnasticsStore();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [downloadManagerOpen, setDownloadManagerOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      !('serviceWorker' in navigator) ||
+      !localStorage.getItem(OFFLINE_STORAGE_KEY)
+    ) {
+      return;
+    }
+
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+      // The download manager can retry registration when the user refreshes the pack.
+    });
+  }, []);
 
   const changeTab = (tab: ActiveTab) => {
     if (tab !== 'routines') setActiveRoutineId(null);
@@ -61,29 +80,19 @@ function MainAppContent() {
           <button
             type="button"
             onClick={() => changeTab('home')}
-            className="text-left"
+            className="text-left text-base font-black tracking-[-0.05em]"
             aria-label="ROUTNR home"
           >
-            <div className="flex items-center gap-2.5">
-              <span className="glass-float flex h-9 w-9 items-center justify-center rounded-[18px] text-sm font-black tracking-[-0.08em]">
-                R
-              </span>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-                  Gymnastics
-                </p>
-                <p className="text-base font-black tracking-[-0.05em]">{APP_CONFIG.name}</p>
-              </div>
-            </div>
+            {APP_CONFIG.name}
           </button>
 
           <button
             type="button"
-            onClick={() => setCreateRoutineModalOpen(true)}
-            className="glass-float flex h-10 items-center justify-center rounded-[20px] px-4 text-[var(--text-primary)] transition-transform hover:-translate-y-0.5"
-            aria-label="Create routine"
+            onClick={() => setDownloadManagerOpen(true)}
+            className="glass-float backdrop-blur-[2px] flex h-10 w-10 items-center justify-center rounded-[20px] text-[var(--text-primary)] transition-transform hover:-translate-y-0.5"
+            aria-label="Open download manager"
           >
-            <Plus className="h-4 w-4" />
+            <Download className="h-4 w-4" />
           </button>
         </header>
 
@@ -208,9 +217,28 @@ function MainAppContent() {
               type="button"
               onClick={() => {
                 setMenuOpen(false);
-                setCreateRoutineModalOpen(true);
+                setProfileOpen(true);
               }}
               className="flex w-full items-center justify-between rounded-[12px] px-4 py-3 text-left hover:bg-white/55"
+            >
+              <div className="flex items-center gap-3">
+                <UserRound className="h-4 w-4 text-[var(--text-secondary)]" />
+                <div>
+                  <p className="text-sm font-semibold">Profile</p>
+                  <p className="mt-0.5 text-[11px] text-[var(--text-tertiary)]">
+                    Local gymnast profile
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setCreateRoutineModalOpen(true);
+              }}
+              className="mt-1 flex w-full items-center justify-between rounded-[12px] px-4 py-3 text-left hover:bg-white/55"
             >
               <div>
                 <p className="text-sm font-semibold">New routine</p>
@@ -233,6 +261,14 @@ function MainAppContent() {
 
       <SkillDetailModal />
       <CreateRoutineModal />
+      <DownloadManagerModal
+        isOpen={downloadManagerOpen}
+        onClose={() => setDownloadManagerOpen(false)}
+      />
+      <ProfileModal
+        isOpen={profileOpen}
+        onClose={() => setProfileOpen(false)}
+      />
     </div>
   );
 }
