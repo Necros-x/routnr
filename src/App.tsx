@@ -1,13 +1,7 @@
 'use client';
 
-import React from 'react';
-import {
-  House,
-  Search,
-  ListChecks,
-  Plus,
-  ArrowUpRight,
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { House, Search, ListChecks, Menu, Plus, X } from 'lucide-react';
 import { GymnasticsStoreProvider, useGymnasticsStore } from './hooks/useGymnasticsStore';
 import { HomeScreen } from './screens/HomeScreen';
 import { SkillLibraryScreen } from './screens/SkillLibraryScreen';
@@ -17,12 +11,6 @@ import { SkillDetailModal } from './screens/SkillDetailModal';
 import { CreateRoutineModal } from './screens/CreateRoutineModal';
 import { APP_CONFIG } from './config/app';
 import type { ActiveTab } from './types/gymnastics';
-
-const NAV_ITEMS: Array<{ id: ActiveTab; label: string; icon: React.ElementType }> = [
-  { id: 'home', label: 'Home', icon: House },
-  { id: 'skills', label: 'Skills', icon: Search },
-  { id: 'routines', label: 'Routines', icon: ListChecks },
-];
 
 function MainAppContent() {
   const {
@@ -34,9 +22,12 @@ function MainAppContent() {
     setCreateRoutineModalOpen,
   } = useGymnasticsStore();
 
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const changeTab = (tab: ActiveTab) => {
     if (tab !== 'routines') setActiveRoutineId(null);
     setActiveTab(tab);
+    setMenuOpen(false);
   };
 
   const openBuilder = (routineId: string) => {
@@ -44,141 +35,136 @@ function MainAppContent() {
     setActiveTab('routines');
   };
 
-  const pageLabel = activeRoutineId
-    ? 'Routine Builder'
-    : activeTab === 'skills'
-      ? 'Skill Library'
-      : activeTab === 'routines'
-        ? 'My Routines'
-        : 'Overview';
-
   return (
-    <div className="min-h-screen bg-[var(--app-bg)] text-[var(--text-primary)] md:p-4">
-      <div className="mx-auto min-h-screen max-w-[1680px] md:grid md:min-h-[calc(100vh-2rem)] md:grid-cols-[92px_minmax(0,1fr)] md:gap-4">
-        <aside className="surface hidden rounded-[28px] p-3 md:flex md:flex-col md:items-center">
+    <div className="min-h-screen bg-[var(--app-bg)] text-[var(--text-primary)]">
+      <div className="mx-auto min-h-screen w-full max-w-6xl px-4 pb-28 pt-4 sm:px-6 sm:pt-6 lg:px-8">
+        <header className="flex items-center justify-between">
           <button
             type="button"
             onClick={() => changeTab('home')}
-            className="focus-ring flex h-14 w-14 items-center justify-center rounded-[18px] bg-[var(--accent)] text-lg font-black tracking-[-0.08em] text-white"
-            aria-label="Go home"
+            className="text-left"
+            aria-label="ROUTNR home"
           >
-            {APP_CONFIG.shortName}
-          </button>
-
-          <nav className="mt-10 flex w-full flex-col gap-2">
-            {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
-              const isActive = activeTab === id && !(id === 'routines' && activeRoutineId);
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => changeTab(id)}
-                  className={`focus-ring group flex w-full flex-col items-center gap-1.5 rounded-[18px] px-2 py-3 text-[10px] font-semibold transition-colors ${
-                    isActive
-                      ? 'bg-[var(--accent-soft)] text-[var(--text-primary)]'
-                      : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" strokeWidth={1.9} />
-                  <span>{label}</span>
-                </button>
-              );
-            })}
-          </nav>
-
-          <div className="mt-auto w-full space-y-2">
-            <button
-              type="button"
-              onClick={() => setCreateRoutineModalOpen(true)}
-              className="focus-ring flex w-full flex-col items-center gap-1.5 rounded-[18px] bg-[var(--accent)] px-2 py-3 text-[10px] font-semibold text-white transition-transform hover:-translate-y-0.5"
-            >
-              <Plus className="h-5 w-5" />
-              <span>New</span>
-            </button>
-          </div>
-        </aside>
-
-        <section className="min-w-0 overflow-hidden md:surface md:rounded-[30px]">
-          <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b border-[var(--border-subtle)] bg-[rgba(255,255,255,0.9)] px-4 backdrop-blur-xl sm:px-6 md:px-8">
-            <div className="flex min-w-0 items-center gap-3">
-              <button
-                type="button"
-                onClick={() => changeTab('home')}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--accent)] font-black tracking-[-0.08em] text-white md:hidden"
-                aria-label="ROUTNR home"
-              >
-                {APP_CONFIG.shortName}
-              </button>
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                  {APP_CONFIG.name}
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-[14px] border border-[var(--border-medium)] bg-white text-sm font-black tracking-[-0.08em]">
+                R
+              </span>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
+                  Gymnastics
                 </p>
-                <h1 className="truncate text-sm font-semibold text-[var(--text-primary)]">{pageLabel}</h1>
+                <p className="text-base font-black tracking-[-0.05em]">{APP_CONFIG.name}</p>
               </div>
             </div>
+          </button>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => changeTab('skills')}
-                className="focus-ring hidden h-10 items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-soft)] px-4 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] sm:flex"
-              >
-                <Search className="h-4 w-4" />
-                <span>Search skills</span>
-                <ArrowUpRight className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
-              </button>
-              <span className="hidden rounded-full border border-[var(--border-subtle)] bg-white px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-tertiary)] lg:inline-flex">
-                {APP_CONFIG.codeCycle}
-              </span>
-              <button
-                type="button"
-                onClick={() => setCreateRoutineModalOpen(true)}
-                className="focus-ring inline-flex h-10 items-center gap-2 rounded-full bg-[var(--accent)] px-4 text-xs font-semibold text-white transition-transform hover:-translate-y-0.5"
-              >
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">New routine</span>
-              </button>
-            </div>
-          </header>
+          <button
+            type="button"
+            onClick={() => setCreateRoutineModalOpen(true)}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border-medium)] bg-white text-[var(--text-primary)] shadow-sm transition-transform hover:-translate-y-0.5"
+            aria-label="Create routine"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </header>
 
-          <main className="mx-auto w-full max-w-[1480px] px-4 pb-28 pt-5 sm:px-6 md:px-8 md:pb-8 md:pt-8">
-            {activeTab === 'home' && <HomeScreen />}
-            {activeTab === 'skills' && <SkillLibraryScreen />}
-            {activeTab === 'routines' &&
-              (activeRoutineId ? (
-                <RoutineBuilderScreen onBack={() => setActiveRoutineId(null)} />
-              ) : (
-                <MyRoutinesScreen onOpenBuilder={openBuilder} />
-              ))}
-          </main>
-        </section>
+        <main className="mt-8">
+          {activeTab === 'home' && <HomeScreen />}
+          {activeTab === 'skills' && <SkillLibraryScreen />}
+          {activeTab === 'routines' &&
+            (activeRoutineId ? (
+              <RoutineBuilderScreen onBack={() => setActiveRoutineId(null)} />
+            ) : (
+              <MyRoutinesScreen onOpenBuilder={openBuilder} />
+            ))}
+        </main>
       </div>
 
-      <nav className="fixed inset-x-3 bottom-3 z-40 rounded-[22px] border border-[var(--border-medium)] bg-[rgba(255,255,255,0.94)] p-1.5 shadow-[var(--shadow-float)] backdrop-blur-xl md:hidden">
-        <div className="grid grid-cols-3 gap-1">
-          {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
-            const isActive = activeTab === id && !(id === 'routines' && activeRoutineId);
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => changeTab(id)}
-                className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-[17px] text-[10px] font-semibold transition-colors ${
-                  isActive
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)]'
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                <span>{label}</span>
-                {id === 'routines' && routines.length > 0 && (
-                  <span className="absolute sr-only">{routines.length} routines</span>
-                )}
-              </button>
-            );
-          })}
+      <nav className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-[26px] border border-[var(--border-medium)] bg-white/95 p-1.5 shadow-[0_18px_45px_rgba(28,28,25,0.12)] backdrop-blur-xl">
+        <div className="grid grid-cols-4 gap-1">
+          <button
+            type="button"
+            onClick={() => changeTab('home')}
+            className={`flex h-14 items-center justify-center rounded-[20px] transition-colors ${
+              activeTab === 'home'
+                ? 'bg-[var(--accent)] text-white'
+                : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)] hover:text-[var(--text-primary)]'
+            }`}
+            aria-label="Home"
+          >
+            <House className="h-5 w-5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => changeTab('skills')}
+            className={`flex h-14 items-center justify-center rounded-[20px] transition-colors ${
+              activeTab === 'skills'
+                ? 'bg-[var(--accent)] text-white'
+                : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)] hover:text-[var(--text-primary)]'
+            }`}
+            aria-label="Skills"
+          >
+            <Search className="h-5 w-5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => changeTab('routines')}
+            className={`relative flex h-14 items-center justify-center rounded-[20px] transition-colors ${
+              activeTab === 'routines'
+                ? 'bg-[var(--accent)] text-white'
+                : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)] hover:text-[var(--text-primary)]'
+            }`}
+            aria-label="Routines"
+          >
+            <ListChecks className="h-5 w-5" />
+            {routines.length > 0 && (
+              <span className="absolute right-3 top-2 min-w-4 rounded-full bg-[var(--app-bg-strong)] px-1 text-center text-[9px] font-bold text-[var(--text-primary)]">
+                {routines.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            className={`flex h-14 items-center justify-center rounded-[20px] transition-colors ${
+              menuOpen
+                ? 'bg-[var(--accent)] text-white'
+                : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)] hover:text-[var(--text-primary)]'
+            }`}
+            aria-label="Menu"
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
       </nav>
+
+      {menuOpen && (
+        <div className="fixed inset-x-4 bottom-[92px] z-40 mx-auto max-w-md rounded-[24px] border border-[var(--border-medium)] bg-white p-3 shadow-[0_18px_45px_rgba(28,28,25,0.12)]">
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              setCreateRoutineModalOpen(true);
+            }}
+            className="flex w-full items-center justify-between rounded-[18px] px-4 py-3 text-left hover:bg-[var(--surface-soft)]"
+          >
+            <div>
+              <p className="text-sm font-semibold">New routine</p>
+              <p className="mt-0.5 text-[11px] text-[var(--text-tertiary)]">Start from an apparatus</p>
+            </div>
+            <Plus className="h-4 w-4" />
+          </button>
+          <div className="mt-1 rounded-[18px] bg-[var(--surface-soft)] px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+              Code cycle
+            </p>
+            <p className="mt-1 text-xs font-medium">{APP_CONFIG.codeCycle}</p>
+          </div>
+        </div>
+      )}
 
       <SkillDetailModal />
       <CreateRoutineModal />
