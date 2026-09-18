@@ -1,201 +1,164 @@
 import React from 'react';
-import {
-  ArrowRight,
-  Plus,
-  Search,
-  ListChecks,
-  Star,
-  Activity,
-} from 'lucide-react';
+import { ArrowRight, Plus } from 'lucide-react';
 import { useGymnasticsStore } from '../hooks/useGymnasticsStore';
-import { ALL_APPARATUS } from '../data/mockSkills';
-import { APP_CONFIG } from '../config/app';
 
 export const HomeScreen: React.FC = () => {
   const {
     routines,
     setActiveTab,
     openRoutineInBuilder,
-    recentlyViewedSkills,
-    setSelectedSkill,
     setCreateRoutineModalOpen,
-    favoriteSkillIds,
-    markSkillViewed,
   } = useGymnasticsStore();
 
-  const latestRoutine = routines[0] || null;
-  const highestScore = Math.max(...routines.map((routine) => routine.summary.totalDScore), 0);
+  const latestRoutine = routines[0] ?? null;
+  const visibleRoutines = routines.slice(0, 4);
 
   return (
-    <div className="space-y-8">
-      <section className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)]">
-        <div className="rounded-[28px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] p-6 sm:p-8 lg:p-10">
-          <p className="mb-5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-            {APP_CONFIG.eyebrow} · {APP_CONFIG.codeCycle}
-          </p>
-          <h2 className="font-display max-w-3xl text-4xl font-semibold leading-[0.98] text-[var(--text-primary)] sm:text-5xl lg:text-6xl">
-            Build the routine. Find the skill. Keep moving.
-          </h2>
-          <p className="mt-5 max-w-2xl text-sm leading-6 text-[var(--text-secondary)] sm:text-base">
-            A focused gymnastics workspace for searching elements and assembling competition routines without the extra noise.
-          </p>
-
-          <div className="mt-8 flex flex-wrap gap-2.5">
-            <button
-              type="button"
-              onClick={() => setCreateRoutineModalOpen(true)}
-              className="inline-flex h-12 items-center gap-2 rounded-full bg-[var(--accent)] px-5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
-            >
-              <Plus className="h-4 w-4" />
-              Create routine
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('skills')}
-              className="inline-flex h-12 items-center gap-2 rounded-full border border-[var(--border-medium)] bg-white px-5 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)]"
-            >
-              <Search className="h-4 w-4" />
-              Search skills
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-          <div className="surface rounded-[24px] p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--text-primary)]">
-                <ListChecks className="h-4.5 w-4.5" />
-              </span>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Routines</span>
-            </div>
-            <p className="mt-8 text-3xl font-semibold tracking-[-0.05em]">{routines.length}</p>
-            <p className="mt-1 text-xs text-[var(--text-secondary)]">Saved locally on this device</p>
-          </div>
-
-          <div className="surface rounded-[24px] p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[var(--accent-soft)] text-[var(--text-primary)]">
-                <Activity className="h-4.5 w-4.5" />
-              </span>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Best D</span>
-            </div>
-            <p className="mt-8 text-3xl font-semibold tracking-[-0.05em]">{highestScore.toFixed(2)}</p>
-            <p className="mt-1 text-xs text-[var(--text-secondary)]">Highest calculated routine</p>
-          </div>
-        </div>
+    <div className="space-y-9">
+      <section>
+        <p className="text-xs font-medium text-[var(--text-tertiary)]">Name —</p>
+        <h1 className="font-display mt-2 text-4xl font-semibold uppercase leading-none tracking-[-0.05em] sm:text-5xl">
+          Welcome back.
+        </h1>
       </section>
 
-      {latestRoutine && (
-        <section>
-          <div className="mb-3 flex items-end justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Continue</p>
-              <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em]">Latest routine</h3>
-            </div>
+      <section>
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <h2 className="text-lg font-semibold tracking-[-0.03em]">Continue Building</h2>
+          {routines.length > 1 && (
             <button
               type="button"
               onClick={() => setActiveTab('routines')}
-              className="text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              className="text-xs font-medium text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
             >
               View all
             </button>
-          </div>
+          )}
+        </div>
 
+        {latestRoutine ? (
           <button
             type="button"
             onClick={() => openRoutineInBuilder(latestRoutine.id)}
-            className="surface group flex w-full flex-col gap-5 rounded-[26px] p-5 text-left transition-transform hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+            className="group w-full rounded-[26px] border border-[var(--border-medium)] bg-white p-5 text-left sm:p-6"
           >
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
+            <div className="flex min-h-[170px] flex-col justify-between sm:min-h-[210px]">
+              <div className="flex items-start justify-between gap-4">
+                <span className="rounded-full bg-[var(--surface-soft)] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.11em] text-[var(--text-secondary)]">
                   {latestRoutine.apparatus}
                 </span>
-                <span className="text-[11px] text-[var(--text-tertiary)]">{latestRoutine.lastEdited}</span>
+                <div className="text-right">
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                    D Score
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold tracking-[-0.05em]">
+                    {latestRoutine.summary.totalDScore.toFixed(2)}
+                  </p>
+                </div>
               </div>
-              <h4 className="mt-3 truncate text-xl font-semibold tracking-[-0.03em] sm:text-2xl">{latestRoutine.name}</h4>
-              <p className="mt-2 text-xs text-[var(--text-secondary)]">
-                {latestRoutine.skills.length} elements · DV {latestRoutine.summary.difficultyValue.toFixed(1)} · EG {latestRoutine.summary.elementGroupValue.toFixed(1)}
-              </p>
-            </div>
 
-            <div className="flex w-full items-center justify-between gap-4 border-t border-[var(--border-subtle)] pt-4 sm:w-auto sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
               <div>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">D score</p>
-                <p className="mt-1 text-3xl font-semibold tracking-[-0.05em]">{latestRoutine.summary.totalDScore.toFixed(2)}</p>
+                <h3 className="text-xl font-semibold tracking-[-0.035em] sm:text-2xl">
+                  {latestRoutine.name}
+                </h3>
+                <div className="mt-3 flex items-center justify-between gap-4">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    {latestRoutine.skills.length} elements · {latestRoutine.lastEdited}
+                  </p>
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-white transition-transform group-hover:translate-x-0.5">
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
+                </div>
               </div>
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent)] text-white transition-transform group-hover:translate-x-0.5">
-                <ArrowRight className="h-4 w-4" />
-              </span>
             </div>
           </button>
-        </section>
-      )}
-
-      <section>
-        <div className="mb-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Explore</p>
-          <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em]">Apparatus</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
-          {ALL_APPARATUS.map((apparatus) => (
-            <button
-              key={apparatus.name}
-              type="button"
-              onClick={() => setActiveTab('skills')}
-              className="surface group rounded-[20px] p-4 text-left transition-colors hover:bg-[var(--surface-soft)]"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs font-black tracking-[-0.04em]">{apparatus.code}</span>
-                <ArrowRight className="h-3.5 w-3.5 text-[var(--text-tertiary)] transition-transform group-hover:translate-x-0.5" />
-              </div>
-              <p className="mt-6 text-xs font-medium leading-4 text-[var(--text-secondary)]">{apparatus.name}</p>
-            </button>
-          ))}
-        </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setCreateRoutineModalOpen(true)}
+            className="flex min-h-[190px] w-full flex-col items-center justify-center rounded-[26px] border border-dashed border-[var(--border-strong)] bg-white text-center"
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent)] text-white">
+              <Plus className="h-5 w-5" />
+            </span>
+            <h3 className="mt-4 text-sm font-semibold">Create your first routine</h3>
+            <p className="mt-1 text-xs text-[var(--text-tertiary)]">Choose an apparatus and start building</p>
+          </button>
+        )}
       </section>
 
-      {recentlyViewedSkills.length > 0 && (
-        <section>
-          <div className="mb-3 flex items-end justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Reference</p>
-              <h3 className="mt-1 text-xl font-semibold tracking-[-0.03em]">Recently viewed</h3>
-            </div>
-            <div className="flex items-center gap-1 text-[11px] font-medium text-[var(--text-tertiary)]">
-              <Star className="h-3.5 w-3.5" />
-              {favoriteSkillIds.length} saved
-            </div>
-          </div>
+      <section>
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <h2 className="text-lg font-semibold tracking-[-0.03em]">Your Routines</h2>
+          <button
+            type="button"
+            onClick={() => setCreateRoutineModalOpen(true)}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-medium)] bg-white text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            aria-label="Create routine"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
 
-          <div className="surface overflow-hidden rounded-[24px]">
-            {recentlyViewedSkills.slice(0, 5).map((skill, index) => (
+        {visibleRoutines.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {visibleRoutines.map((routine) => (
               <button
-                key={skill.id}
+                key={routine.id}
                 type="button"
-                onClick={() => {
-                  markSkillViewed(skill);
-                  setSelectedSkill(skill);
-                }}
-                className={`flex w-full items-center gap-4 p-4 text-left transition-colors hover:bg-[var(--surface-soft)] sm:px-5 ${
-                  index > 0 ? 'border-t border-[var(--border-subtle)]' : ''
-                }`}
+                onClick={() => openRoutineInBuilder(routine.id)}
+                className="min-h-[145px] rounded-[22px] border border-[var(--border-medium)] bg-white p-4 text-left transition-transform hover:-translate-y-0.5 sm:min-h-[170px] sm:p-5"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[var(--accent-soft)] text-sm font-bold">
-                  {skill.difficulty}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold">{skill.name}</span>
-                  <span className="mt-1 block truncate text-[11px] text-[var(--text-tertiary)]">
-                    {skill.apparatus} · FIG {skill.figCode}
-                  </span>
-                </span>
-                <ArrowRight className="h-4 w-4 shrink-0 text-[var(--text-tertiary)]" />
+                <div className="flex h-full flex-col justify-between">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.11em] text-[var(--text-tertiary)]">
+                      {routine.apparatus
+                        .split(' ')
+                        .map((word) => word[0])
+                        .join('')
+                        .slice(0, 2)}
+                    </span>
+                    <span className="text-xs font-semibold">{routine.summary.totalDScore.toFixed(2)}</span>
+                  </div>
+
+                  <div className="mt-8">
+                    <h3 className="line-clamp-2 text-sm font-semibold leading-5 tracking-[-0.02em] sm:text-base">
+                      {routine.name}
+                    </h3>
+                    <p className="mt-2 text-[10px] text-[var(--text-tertiary)]">
+                      {routine.skills.length} elements
+                    </p>
+                  </div>
+                </div>
               </button>
             ))}
           </div>
-        </section>
-      )}
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {[0, 1, 2, 3].map((slot) => (
+              <button
+                key={slot}
+                type="button"
+                onClick={() => setCreateRoutineModalOpen(true)}
+                className="flex min-h-[135px] items-center justify-center rounded-[22px] border border-dashed border-[var(--border-medium)] bg-white/60 text-[var(--text-tertiary)]"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {routines.length > 4 && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('routines')}
+            className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          >
+            See all {routines.length} routines
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </section>
     </div>
   );
 };
