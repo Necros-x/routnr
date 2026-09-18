@@ -10,67 +10,70 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({ onOpenBuilde
   const { routines, deleteRoutine, setCreateRoutineModalOpen } = useGymnasticsStore();
 
   return (
-    <div className="space-y-6">
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-7">
+      <section className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">Workspace</p>
-          <h2 className="font-display mt-1 text-3xl font-semibold sm:text-4xl">Your routines.</h2>
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">Open one to edit the sequence, search matching skills, and track the D score.</p>
+          <p className="text-xs font-medium text-[var(--text-tertiary)]">Saved locally</p>
+          <h1 className="font-display mt-2 text-4xl font-semibold uppercase leading-none tracking-[-0.05em]">
+            Your routines.
+          </h1>
         </div>
         <button
           type="button"
           onClick={() => setCreateRoutineModalOpen(true)}
-          className="inline-flex h-11 items-center justify-center gap-2 self-start rounded-full bg-[var(--accent)] px-5 text-sm font-semibold text-white sm:self-auto"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-white"
+          aria-label="Create routine"
         >
           <Plus className="h-4 w-4" />
-          New routine
         </button>
       </section>
 
       {routines.length === 0 ? (
-        <section className="surface rounded-[28px] px-6 py-16 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[18px] bg-[var(--accent-soft)]">
+        <button
+          type="button"
+          onClick={() => setCreateRoutineModalOpen(true)}
+          className="flex min-h-[260px] w-full flex-col items-center justify-center rounded-[26px] border border-dashed border-[var(--border-strong)] bg-white text-center"
+        >
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent)] text-white">
             <Plus className="h-5 w-5" />
-          </div>
-          <h3 className="mt-5 text-lg font-semibold">No routines yet</h3>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--text-secondary)]">Create your first apparatus routine and start adding skills from the library.</p>
-          <button
-            type="button"
-            onClick={() => setCreateRoutineModalOpen(true)}
-            className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-[var(--accent)] px-5 text-sm font-semibold text-white"
-          >
-            <Plus className="h-4 w-4" /> Create first routine
-          </button>
-        </section>
+          </span>
+          <h2 className="mt-4 text-sm font-semibold">Create your first routine</h2>
+          <p className="mt-1 text-xs text-[var(--text-tertiary)]">Choose an apparatus and start building</p>
+        </button>
       ) : (
-        <section className="surface overflow-hidden rounded-[28px]">
-          {routines.map((routine, index) => (
+        <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+          {routines.map((routine) => (
             <div
               key={routine.id}
-              className={`group flex items-center gap-3 p-4 sm:gap-5 sm:p-5 ${index > 0 ? 'border-t border-[var(--border-subtle)]' : ''}`}
+              className="group relative min-h-[175px] rounded-[24px] border border-[var(--border-medium)] bg-white p-4 sm:min-h-[205px] sm:p-5"
             >
               <button
                 type="button"
                 onClick={() => onOpenBuilder(routine.id)}
-                className="flex min-w-0 flex-1 items-center gap-4 text-left"
+                className="flex h-full w-full flex-col text-left"
               >
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-[var(--accent-soft)] text-[11px] font-black tracking-[-0.03em]">
-                  {routine.apparatus
-                    .split(' ')
-                    .map((part) => part[0])
-                    .join('')
-                    .slice(0, 2)}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold sm:text-base">{routine.name}</span>
-                  <span className="mt-1 block truncate text-[11px] text-[var(--text-secondary)]">
-                    {routine.apparatus} · {routine.skills.length} elements · {routine.lastEdited}
+                <div className="flex items-start justify-between gap-3 pr-8">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">
+                    {routine.apparatus}
                   </span>
-                </span>
-                <span className="hidden shrink-0 text-right sm:block">
-                  <span className="block text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">D score</span>
-                  <span className="mt-1 block text-xl font-semibold tracking-[-0.04em]">{routine.summary.totalDScore.toFixed(2)}</span>
-                </span>
+                  <span className="text-lg font-semibold tracking-[-0.05em]">
+                    {routine.summary.totalDScore.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="mt-auto pt-8">
+                  <h2 className="line-clamp-2 text-base font-semibold leading-5 tracking-[-0.025em] sm:text-lg">
+                    {routine.name}
+                  </h2>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <p className="text-[10px] text-[var(--text-tertiary)]">
+                      {routine.skills.length} elements
+                    </p>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent)] text-white transition-transform group-hover:translate-x-0.5">
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </span>
+                  </div>
+                </div>
               </button>
 
               <button
@@ -78,21 +81,21 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({ onOpenBuilde
                 onClick={() => {
                   if (window.confirm(`Delete “${routine.name}”?`)) deleteRoutine(routine.id);
                 }}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--text-tertiary)] transition-colors hover:bg-[#fff0f0] hover:text-[var(--danger)]"
+                className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-tertiary)] opacity-100 transition-colors hover:bg-[#fff1f1] hover:text-[var(--danger)] sm:opacity-0 sm:group-hover:opacity-100"
                 aria-label={`Delete ${routine.name}`}
               >
-                <Trash2 className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onOpenBuilder(routine.id)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-white transition-transform group-hover:translate-x-0.5"
-                aria-label={`Open ${routine.name}`}
-              >
-                <ArrowRight className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
           ))}
+
+          <button
+            type="button"
+            onClick={() => setCreateRoutineModalOpen(true)}
+            className="flex min-h-[175px] items-center justify-center rounded-[24px] border border-dashed border-[var(--border-strong)] bg-white/50 text-[var(--text-tertiary)] sm:min-h-[205px]"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
         </section>
       )}
     </div>
