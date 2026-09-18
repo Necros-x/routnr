@@ -52,7 +52,7 @@ export const CreateRoutineModal: React.FC = () => {
         aria-modal="true"
         aria-label="Create routine"
         onMouseDown={(event) => event.stopPropagation()}
-        className="max-h-[92vh] w-full overflow-y-auto rounded-t-[30px] border border-[var(--border-subtle)] bg-white p-5 shadow-[var(--shadow-float)] sm:max-w-2xl sm:rounded-[30px] sm:p-6"
+        className="glass-float max-h-[92vh] w-full overflow-y-auto rounded-t-[28px] p-4 sm:max-w-2xl sm:rounded-[28px] sm:p-4"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -78,7 +78,7 @@ export const CreateRoutineModal: React.FC = () => {
               onChange={(event) => setName(event.target.value)}
               placeholder={`${selectedApparatus} Routine`}
               autoFocus
-              className="mt-2 h-12 w-full rounded-[16px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] px-4 text-sm outline-none transition-colors placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-strong)]"
+              className="mt-2 h-12 w-full rounded-[12px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] px-4 text-sm outline-none transition-colors placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-strong)]"
             />
           </div>
 
@@ -92,7 +92,7 @@ export const CreateRoutineModal: React.FC = () => {
                     key={item.name}
                     type="button"
                     onClick={() => setSelectedApparatus(item.name as Apparatus)}
-                    className={`rounded-[16px] border p-3 text-left transition-colors ${selected ? 'border-[var(--accent)] bg-[var(--accent)] text-white' : 'border-[var(--border-subtle)] bg-[var(--surface-soft)] text-[var(--text-primary)] hover:border-[var(--border-medium)]'}`}
+                    className={`rounded-[12px] border p-3 text-left transition-colors ${selected ? 'border-[var(--accent)] bg-[var(--accent)] text-white' : 'border-[var(--border-subtle)] bg-[var(--surface-soft)] text-[var(--text-primary)] hover:border-[var(--border-medium)]'}`}
                   >
                     <span className="block text-[10px] font-black tracking-[-0.03em] opacity-70">{item.code}</span>
                     <span className="mt-3 block text-xs font-semibold">{item.name}</span>
@@ -109,7 +109,7 @@ export const CreateRoutineModal: React.FC = () => {
               onChange={(event) => setNotes(event.target.value)}
               rows={3}
               placeholder="Training goal, connection ideas, landing cues…"
-              className="mt-2 w-full resize-none rounded-[16px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] p-4 text-sm leading-6 outline-none transition-colors placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-strong)]"
+              className="mt-2 w-full resize-none rounded-[12px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] p-4 text-sm leading-6 outline-none transition-colors placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-strong)]"
             />
           </div>
 
