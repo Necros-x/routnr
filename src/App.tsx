@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Download, House, Search, ListChecks, Menu, Plus, UserRound, X } from 'lucide-react';
+import { Download, House, Search, ListChecks, Menu, Plus, Settings2, UserRound, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { GymnasticsStoreProvider, useGymnasticsStore } from './hooks/useGymnasticsStore';
 import { HomeScreen } from './screens/HomeScreen';
@@ -12,6 +12,7 @@ import { SkillDetailModal } from './screens/SkillDetailModal';
 import { CreateRoutineModal } from './screens/CreateRoutineModal';
 import { DownloadManagerModal } from './components/DownloadManagerModal';
 import { ProfileModal } from './components/ProfileModal';
+import { SettingsModal } from './components/SettingsModal';
 import { APP_CONFIG } from './config/app';
 import { OFFLINE_STORAGE_KEY } from './config/code';
 import type { ActiveTab } from './types/gymnastics';
@@ -36,6 +37,7 @@ function MainAppContent() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [downloadManagerOpen, setDownloadManagerOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     if (
@@ -236,6 +238,25 @@ function MainAppContent() {
               type="button"
               onClick={() => {
                 setMenuOpen(false);
+                setSettingsOpen(true);
+              }}
+              className="mt-1 flex w-full items-center justify-between rounded-[12px] px-4 py-3 text-left hover:bg-white/55"
+            >
+              <div className="flex items-center gap-3">
+                <Settings2 className="h-4 w-4 text-[var(--text-secondary)]" />
+                <div>
+                  <p className="text-sm font-semibold">Settings</p>
+                  <p className="mt-0.5 text-[11px] text-[var(--text-tertiary)]">
+                    App preferences and storage
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
                 setCreateRoutineModalOpen(true);
               }}
               className="mt-1 flex w-full items-center justify-between rounded-[12px] px-4 py-3 text-left hover:bg-white/55"
@@ -268,6 +289,11 @@ function MainAppContent() {
       <ProfileModal
         isOpen={profileOpen}
         onClose={() => setProfileOpen(false)}
+      />
+      <SettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onOpenDownloads={() => setDownloadManagerOpen(true)}
       />
     </div>
   );
