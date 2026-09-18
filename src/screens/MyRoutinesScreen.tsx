@@ -1,13 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { Plus, Layers, ArrowUpDown, Search } from 'lucide-react';
+import React from 'react';
+import { ArrowRight, Plus, Trash2 } from 'lucide-react';
 import { useGymnasticsStore } from '../hooks/useGymnasticsStore';
-import { ALL_APPARATUS } from '../data/mockSkills';
-import { RoutineCard } from '../components/RoutineCard';
-import { PillButton } from '../components/ui/PillButton';
-import { FilterPill } from '../components/ui/FilterPill';
-import { EmptyState } from '../components/ui/EmptyState';
-import { SearchBar } from '../components/ui/SearchBar';
-import { Routine } from '../types/gymnastics';
 
 interface MyRoutinesScreenProps {
   onOpenBuilder: (routineId: string) => void;
@@ -16,149 +9,94 @@ interface MyRoutinesScreenProps {
 export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({ onOpenBuilder }) => {
   const { routines, deleteRoutine, setCreateRoutineModalOpen } = useGymnasticsStore();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedApparatus, setSelectedApparatus] = useState<string>('All');
-  const [sortBy, setSortBy] = useState<'recent' | 'dscore' | 'skills'>('recent');
-
-  const filteredRoutines = useMemo(() => {
-    let result = [...routines];
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (r) =>
-          r.name.toLowerCase().includes(q) ||
-          r.apparatus.toLowerCase().includes(q) ||
-          r.notes?.toLowerCase().includes(q)
-      );
-    }
-
-    if (selectedApparatus !== 'All') {
-      result = result.filter((r) => r.apparatus === selectedApparatus);
-    }
-
-    // Sort
-    if (sortBy === 'dscore') {
-      result.sort((a, b) => b.summary.totalDScore - a.summary.totalDScore);
-    } else if (sortBy === 'skills') {
-      result.sort((a, b) => b.skills.length - a.skills.length);
-    }
-
-    return result;
-  }, [routines, searchQuery, selectedApparatus, sortBy]);
-
-  const handleOpenRoutine = (routine: Routine) => {
-    onOpenBuilder(routine.id);
-  };
-
   return (
-    <div className="space-y-4 pb-28">
-      {/* Header with Create Button */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-7">
+      <section className="flex items-end justify-between gap-4">
         <div>
-          <span className="text-[10px] tracking-[0.2em] uppercase font-mono text-neutral-400 block">
-            Routine Vault
-          </span>
-          <h1 className="text-xl font-bold tracking-tight text-white font-display">
-            My Routines
+          <p className="text-xs font-medium text-[var(--text-tertiary)]">Saved locally</p>
+          <h1 className="font-display mt-2 text-4xl font-semibold uppercase leading-none tracking-[-0.05em]">
+            Your routines.
           </h1>
         </div>
-
-        <PillButton
-          variant="primary"
-          size="sm"
+        <button
+          type="button"
           onClick={() => setCreateRoutineModalOpen(true)}
-          icon={<Plus className="w-3.5 h-3.5 text-black" />}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-white"
+          aria-label="Create routine"
         >
-          New Routine
-        </PillButton>
-      </div>
+          <Plus className="h-4 w-4" />
+        </button>
+      </section>
 
-      {/* Search & Sort Bar */}
-      <div className="space-y-2.5">
-        <SearchBar
-          value={searchQuery}
-          onChange={setSearchQuery}
-          placeholder="Filter routines by name or notes..."
-        />
-
-        {/* Apparatus Filter Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-          <FilterPill
-            label="All Routines"
-            active={selectedApparatus === 'All'}
-            onClick={() => setSelectedApparatus('All')}
-            count={routines.length}
-          />
-          {ALL_APPARATUS.map((app) => {
-            const count = routines.filter((r) => r.apparatus === app.name).length;
-            if (count === 0 && selectedApparatus !== app.name) return null;
-            return (
-              <FilterPill
-                key={app.name}
-                label={`${app.code} · ${app.name}`}
-                active={selectedApparatus === app.name}
-                onClick={() => setSelectedApparatus(app.name)}
-                count={count}
-              />
-            );
-          })}
-        </div>
-
-        {/* Sort bar */}
-        <div className="flex items-center justify-between text-xs text-neutral-400 px-1 pt-1">
-          <span className="font-mono">
-            {filteredRoutines.length} {filteredRoutines.length === 1 ? 'routine' : 'routines'}
+      {routines.length === 0 ? (
+        <button
+          type="button"
+          onClick={() => setCreateRoutineModalOpen(true)}
+          className="flex min-h-[260px] w-full flex-col items-center justify-center rounded-[26px] border border-dashed border-[var(--border-strong)] bg-white text-center"
+        >
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent)] text-white">
+            <Plus className="h-5 w-5" />
           </span>
-
-          <div className="flex items-center gap-2">
-            <span className="text-neutral-500">Sort:</span>
-            <button
-              type="button"
-              onClick={() => {
-                if (sortBy === 'recent') setSortBy('dscore');
-                else if (sortBy === 'dscore') setSortBy('skills');
-                else setSortBy('recent');
-              }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-neutral-200 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              <ArrowUpDown className="w-3 h-3" />
-              <span className="capitalize">
-                {sortBy === 'recent'
-                  ? 'Recent'
-                  : sortBy === 'dscore'
-                  ? 'D-Score'
-                  : 'Element Count'}
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Routine Cards List */}
-      {filteredRoutines.length === 0 ? (
-        <EmptyState
-          icon={<Layers className="w-6 h-6" />}
-          title="No routines found"
-          description={
-            searchQuery || selectedApparatus !== 'All'
-              ? 'No routines match your filter criteria.'
-              : 'Start building your first FIG-compliant gymnastics routine.'
-          }
-          actionText="Create New Routine"
-          onAction={() => setCreateRoutineModalOpen(true)}
-        />
+          <h2 className="mt-4 text-sm font-semibold">Create your first routine</h2>
+          <p className="mt-1 text-xs text-[var(--text-tertiary)]">Choose an apparatus and start building</p>
+        </button>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredRoutines.map((routine) => (
-            <RoutineCard
+        <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+          {routines.map((routine) => (
+            <div
               key={routine.id}
-              routine={routine}
-              onOpen={handleOpenRoutine}
-              onDelete={deleteRoutine}
-            />
+              className="group relative min-h-[175px] rounded-[24px] border border-[var(--border-medium)] bg-white p-4 sm:min-h-[205px] sm:p-5"
+            >
+              <button
+                type="button"
+                onClick={() => onOpenBuilder(routine.id)}
+                className="flex h-full w-full flex-col text-left"
+              >
+                <div className="flex items-start justify-between gap-3 pr-8">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">
+                    {routine.apparatus}
+                  </span>
+                  <span className="text-lg font-semibold tracking-[-0.05em]">
+                    {routine.summary.totalDScore.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="mt-auto pt-8">
+                  <h2 className="line-clamp-2 text-base font-semibold leading-5 tracking-[-0.025em] sm:text-lg">
+                    {routine.name}
+                  </h2>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <p className="text-[10px] text-[var(--text-tertiary)]">
+                      {routine.skills.length} elements
+                    </p>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent)] text-white transition-transform group-hover:translate-x-0.5">
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </span>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`Delete “${routine.name}”?`)) deleteRoutine(routine.id);
+                }}
+                className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-tertiary)] opacity-100 transition-colors hover:bg-[#fff1f1] hover:text-[var(--danger)] sm:opacity-0 sm:group-hover:opacity-100"
+                aria-label={`Delete ${routine.name}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
           ))}
-        </div>
+
+          <button
+            type="button"
+            onClick={() => setCreateRoutineModalOpen(true)}
+            className="flex min-h-[175px] items-center justify-center rounded-[24px] border border-dashed border-[var(--border-strong)] bg-white/50 text-[var(--text-tertiary)] sm:min-h-[205px]"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+        </section>
       )}
     </div>
   );

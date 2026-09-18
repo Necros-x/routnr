@@ -1,13 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { Filter, LayoutGrid, List, SlidersHorizontal, X } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Bookmark, Plus, Search, X } from 'lucide-react';
 import { useGymnasticsStore } from '../hooks/useGymnasticsStore';
-import { ALL_APPARATUS, resolveSkillType, resolveBodyPart } from '../data/mockSkills';
-import { FilterPill } from '../components/ui/FilterPill';
-import { SkillCard } from '../components/SkillCard';
-import { EmptyState } from '../components/ui/EmptyState';
-import { GymnasticSkill } from '../types/gymnastics';
-import { SkillFilterSystem, SortOption } from '../components/SkillFilterSystem';
-import { SkillSearchFilterBar } from '../components/SkillSearchFilterBar';
+import { ALL_APPARATUS, DIFFICULTY_LEVELS } from '../data/mockSkills';
 
 export const SkillLibraryScreen: React.FC = () => {
   const {
@@ -15,321 +9,190 @@ export const SkillLibraryScreen: React.FC = () => {
     setSelectedSkill,
     favoriteSkillIds,
     toggleFavorite,
-    addSkillToRoutine,
-    activeRoutineId,
     routines,
+    addSkillToRoutine,
     markSkillViewed,
   } = useGymnasticsStore();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedApparatus, setSelectedApparatus] = useState<string>('All');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('All');
-  const [selectedType, setSelectedType] = useState<string>('All');
-  const [selectedBodyPart, setSelectedBodyPart] = useState<string>('All');
-  const [selectedGroup, setSelectedGroup] = useState<number | 'All'>('All');
-  const [onlyFavorites, setOnlyFavorites] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [sortOption, setSortOption] = useState<SortOption>('difficulty-desc');
-  const [showExtendedFilters, setShowExtendedFilters] = useState(false);
+  const [query, setQuery] = useState('');
+  const [apparatus, setApparatus] = useState('All');
+  const [difficulty, setDifficulty] = useState('All');
 
-  // Active routine for quick add check
-  const activeRoutine = routines.find((r) => r.id === activeRoutineId) || routines[0] || null;
-
-  // Filter skills
   const filteredSkills = useMemo(() => {
-    const list = skills.filter((skill) => {
-      // Search query
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        const matchesName = skill.name.toLowerCase().includes(query);
-        const matchesFig = skill.figCode.toLowerCase().includes(query);
-        const matchesDesc = skill.description.toLowerCase().includes(query);
-        const matchesAliases = skill.aliases.some((a) => a.toLowerCase().includes(query));
-        const matchesTags = skill.tags.some((t) => t.toLowerCase().includes(query));
-        const matchesType = resolveSkillType(skill).toLowerCase().includes(query);
-        const matchesBody = resolveBodyPart(skill).toLowerCase().includes(query);
-        if (
-          !matchesName &&
-          !matchesFig &&
-          !matchesDesc &&
-          !matchesAliases &&
-          !matchesTags &&
-          !matchesType &&
-          !matchesBody
-        ) {
-          return false;
-        }
-      }
+    const normalized = query.trim().toLowerCase();
 
-      // Apparatus
-      if (selectedApparatus !== 'All' && skill.apparatus !== selectedApparatus) {
-        return false;
-      }
+    return skills.filter((skill) => {
+      const searchMatch =
+        !normalized ||
+        skill.name.toLowerCase().includes(normalized) ||
+        skill.figCode.toLowerCase().includes(normalized) ||
+        skill.aliases.some((alias) => alias.toLowerCase().includes(normalized));
 
-      // Difficulty Value (A-H or Tier)
-      if (selectedDifficulty !== 'All') {
-        if (selectedDifficulty === 'A-C') {
-          if (!['A', 'B', 'C'].includes(skill.difficulty)) return false;
-        } else if (selectedDifficulty === 'D-E') {
-          if (!['D', 'E'].includes(skill.difficulty)) return false;
-        } else if (selectedDifficulty === 'F-H') {
-          if (!['F', 'G', 'H'].includes(skill.difficulty)) return false;
-        } else if (skill.difficulty !== selectedDifficulty) {
-          return false;
-        }
-      }
+      const apparatusMatch = apparatus === 'All' || skill.apparatus === apparatus;
+      const difficultyMatch = difficulty === 'All' || skill.difficulty === difficulty;
 
-      // Skill Type
-      if (selectedType !== 'All') {
-        if (resolveSkillType(skill) !== selectedType) {
-          return false;
-        }
-      }
-
-      // Body Part / Anatomical Focus
-      if (selectedBodyPart !== 'All') {
-        if (resolveBodyPart(skill) !== selectedBodyPart) {
-          return false;
-        }
-      }
-
-      // Element Group
-      if (selectedGroup !== 'All' && skill.elementGroupNumber !== selectedGroup) {
-        return false;
-      }
-
-      // Favorites only
-      if (onlyFavorites && !favoriteSkillIds.includes(skill.id)) {
-        return false;
-      }
-
-      return true;
+      return searchMatch && apparatusMatch && difficultyMatch;
     });
-
-    // Sorting
-    return [...list].sort((a, b) => {
-      if (sortOption === 'difficulty-desc') {
-        return b.difficultyValue - a.difficultyValue;
-      }
-      if (sortOption === 'difficulty-asc') {
-        return a.difficultyValue - b.difficultyValue;
-      }
-      if (sortOption === 'name-asc') {
-        return a.name.localeCompare(b.name);
-      }
-      if (sortOption === 'fig-asc') {
-        return a.figCode.localeCompare(b.figCode);
-      }
-      return 0;
-    });
-  }, [
-    skills,
-    searchQuery,
-    selectedApparatus,
-    selectedDifficulty,
-    selectedType,
-    selectedBodyPart,
-    selectedGroup,
-    onlyFavorites,
-    favoriteSkillIds,
-    sortOption,
-  ]);
-
-  const handleSelectSkill = (skill: GymnasticSkill) => {
-    markSkillViewed(skill);
-    setSelectedSkill(skill);
-  };
-
-  const handleAddToRoutine = (skill: GymnasticSkill) => {
-    if (activeRoutine) {
-      addSkillToRoutine(activeRoutine.id, skill);
-    }
-  };
-
-  const clearAllFilters = () => {
-    setSelectedApparatus('All');
-    setSelectedDifficulty('All');
-    setSelectedType('All');
-    setSelectedBodyPart('All');
-    setSelectedGroup('All');
-    setOnlyFavorites(false);
-    setSearchQuery('');
-  };
-
-  const hasActiveFilters =
-    selectedApparatus !== 'All' ||
-    selectedDifficulty !== 'All' ||
-    selectedType !== 'All' ||
-    selectedBodyPart !== 'All' ||
-    selectedGroup !== 'All' ||
-    onlyFavorites ||
-    searchQuery.length > 0;
+  }, [apparatus, difficulty, query, skills]);
 
   return (
-    <div className="space-y-4 pb-28">
-      {/* Header */}
-      <div>
-        <span className="text-[10px] tracking-[0.2em] uppercase font-mono text-neutral-400 block">
-          Skill reference
-        </span>
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold tracking-tight text-white font-display">
-            Skill Library
-          </h1>
-          <div className="flex items-center gap-1 bg-white/[0.06] p-0.5 rounded-full border border-white/[0.08]">
-            <button
-              type="button"
-              onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-full text-xs transition-colors ${
-                viewMode === 'list' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'
-              }`}
-              title="List view"
-            >
-              <List className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-full text-xs transition-colors ${
-                viewMode === 'grid' ? 'bg-white text-black' : 'text-neutral-400 hover:text-white'
-              }`}
-              title="Grid view"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <section>
+        <p className="text-xs font-medium text-[var(--text-tertiary)]">FIG 2025–2028</p>
+        <h1 className="font-display mt-2 text-4xl font-semibold uppercase leading-none tracking-[-0.05em]">
+          Search skills.
+        </h1>
+      </section>
 
-      {/* Unified Search and Filter Bar */}
-      <div className="space-y-3">
-        <SkillSearchFilterBar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          selectedGroup={selectedGroup}
-          onSelectGroup={setSelectedGroup}
-          selectedDifficulty={selectedDifficulty}
-          onSelectDifficulty={setSelectedDifficulty}
-          totalResultsCount={filteredSkills.length}
-          totalSkillsCount={skills.length}
-          onClearAll={clearAllFilters}
-          showExtendedFilters={showExtendedFilters}
-          onToggleExtendedFilters={() => setShowExtendedFilters(!showExtendedFilters)}
-        />
-
-        {/* Primary Apparatus Filter Horizontal Scroll */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
-          <FilterPill
-            label="All Apparatus"
-            active={selectedApparatus === 'All'}
-            onClick={() => setSelectedApparatus('All')}
-            count={skills.length}
+      <section className="rounded-[24px] border border-[var(--border-medium)] bg-white p-3">
+        <div className="flex h-13 items-center gap-3 rounded-[17px] bg-[var(--surface-soft)] px-4">
+          <Search className="h-4.5 w-4.5 shrink-0 text-[var(--text-tertiary)]" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Skill name, alias or FIG code"
+            className="h-13 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-tertiary)]"
           />
-          {ALL_APPARATUS.map((app) => {
-            const count = skills.filter((s) => s.apparatus === app.name).length;
-            return (
-              <FilterPill
-                key={app.name}
-                label={`${app.code} · ${app.name}`}
-                active={selectedApparatus === app.name}
-                onClick={() => setSelectedApparatus(app.name)}
-                count={count}
-              />
-            );
-          })}
-        </div>
-
-        {/* Extended Type & Body Part Filter System (Collapsible) */}
-        {showExtendedFilters && (
-          <div className="animate-in fade-in slide-in-from-top-2 duration-150">
-            <SkillFilterSystem
-              selectedDifficulty={selectedDifficulty}
-              onSelectDifficulty={setSelectedDifficulty}
-              selectedType={selectedType}
-              onSelectType={setSelectedType}
-              selectedBodyPart={selectedBodyPart}
-              onSelectBodyPart={setSelectedBodyPart}
-              selectedGroup={selectedGroup}
-              onSelectGroup={setSelectedGroup}
-              skills={selectedApparatus === 'All' ? skills : skills.filter((s) => s.apparatus === selectedApparatus)}
-              totalFilteredCount={filteredSkills.length}
-              onResetAll={clearAllFilters}
-              sortOption={sortOption}
-              onSortChange={setSortOption}
-            />
-          </div>
-        )}
-
-        {/* Secondary Bar for Favorites & Active Count */}
-        <div className="flex items-center justify-between gap-2 pt-0.5">
-          <div className="flex items-center gap-2">
+          {query && (
             <button
               type="button"
-              onClick={() => setOnlyFavorites(!onlyFavorites)}
-              className={`inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs font-medium border transition-colors ${
-                onlyFavorites
-                  ? 'bg-white text-black border-white font-semibold'
-                  : 'bg-white/[0.05] text-neutral-300 border-white/[0.08] hover:bg-white/10'
+              onClick={() => setQuery('')}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-tertiary)] hover:bg-white"
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar">
+          <button
+            type="button"
+            onClick={() => setApparatus('All')}
+            className={`h-9 shrink-0 rounded-full px-4 text-xs font-semibold ${
+              apparatus === 'All'
+                ? 'bg-[var(--accent)] text-white'
+                : 'border border-[var(--border-subtle)] bg-white text-[var(--text-secondary)]'
+            }`}
+          >
+            All
+          </button>
+          {ALL_APPARATUS.map((item) => (
+            <button
+              key={item.name}
+              type="button"
+              onClick={() => setApparatus(item.name)}
+              className={`h-9 shrink-0 rounded-full px-4 text-xs font-semibold ${
+                apparatus === item.name
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'border border-[var(--border-subtle)] bg-white text-[var(--text-secondary)]'
               }`}
             >
-              <span>Saved Elements</span>
-              <span className="font-mono text-[10px] opacity-75">
-                ({favoriteSkillIds.length})
-              </span>
+              {item.code}
             </button>
-
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={clearAllFilters}
-                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs text-neutral-400 hover:text-white hover:bg-white/[0.06] transition-colors"
-              >
-                <X className="w-3 h-3" />
-                <span>Reset All Filters</span>
-              </button>
-            )}
-          </div>
-
-          <span className="text-xs font-mono text-neutral-400 shrink-0">
-            Showing <strong className="text-white">{filteredSkills.length}</strong> of {skills.length}
-          </span>
+          ))}
         </div>
+
+        <div className="mt-2 flex gap-1 overflow-x-auto no-scrollbar">
+          <button
+            type="button"
+            onClick={() => setDifficulty('All')}
+            className={`flex h-8 min-w-10 shrink-0 items-center justify-center rounded-full px-2 text-[10px] font-bold ${
+              difficulty === 'All'
+                ? 'bg-[var(--accent-soft)] text-[var(--text-primary)]'
+                : 'text-[var(--text-tertiary)]'
+            }`}
+          >
+            All
+          </button>
+          {DIFFICULTY_LEVELS.map((level) => (
+            <button
+              key={level.letter}
+              type="button"
+              onClick={() => setDifficulty(level.letter)}
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                difficulty === level.letter
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)]'
+              }`}
+            >
+              {level.letter}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold">Results</h2>
+        <span className="text-[10px] font-medium text-[var(--text-tertiary)]">{filteredSkills.length} skills</span>
       </div>
 
-      {/* Skills Results List or Grid */}
-      {filteredSkills.length === 0 ? (
-        <EmptyState
-          icon={<Filter className="w-6 h-6" />}
-          title="No skills match your filters"
-          description="Try broadening your criteria, switching apparatus, or resetting value, type, and body part filters."
-          actionText="Clear all filters"
-          onAction={clearAllFilters}
-        />
-      ) : (
-        <div
-          className={
-            viewMode === 'grid'
-              ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5'
-              : 'grid grid-cols-1 md:grid-cols-2 gap-2.5'
-          }
-        >
-          {filteredSkills.map((skill) => {
-            const isInActiveRoutine =
-              activeRoutine?.skills.some((s) => s.skillId === skill.id) || false;
+      <section className="overflow-hidden rounded-[24px] border border-[var(--border-medium)] bg-white">
+        {filteredSkills.length === 0 ? (
+          <div className="px-6 py-14 text-center">
+            <Search className="mx-auto h-5 w-5 text-[var(--text-tertiary)]" />
+            <p className="mt-3 text-sm font-semibold">No matching skills</p>
+            <p className="mt-1 text-xs text-[var(--text-tertiary)]">Try a different search or filter.</p>
+          </div>
+        ) : (
+          filteredSkills.map((skill, index) => {
+            const isFavorite = favoriteSkillIds.includes(skill.id);
+            const targetRoutine = routines.find((routine) => routine.apparatus === skill.apparatus);
+
             return (
-              <SkillCard
+              <div
                 key={skill.id}
-                skill={skill}
-                onSelect={handleSelectSkill}
-                isFavorite={favoriteSkillIds.includes(skill.id)}
-                onToggleFavorite={toggleFavorite}
-                onAddToRoutine={handleAddToRoutine}
-                isInRoutine={isInActiveRoutine}
-              />
+                className={`flex items-center gap-3 p-3.5 sm:p-4 ${
+                  index > 0 ? 'border-t border-[var(--border-subtle)]' : ''
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    markSkillViewed(skill);
+                    setSelectedSkill(skill);
+                  }}
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[var(--accent-soft)] text-xs font-bold">
+                    {skill.difficulty}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold">{skill.name}</span>
+                    <span className="mt-1 block truncate text-[10px] text-[var(--text-tertiary)]">
+                      {skill.apparatus} · FIG {skill.figCode} · Group {skill.elementGroupNumber}
+                    </span>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite(skill.id)}
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                    isFavorite
+                      ? 'bg-[var(--accent-soft)] text-[var(--text-primary)]'
+                      : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)]'
+                  }`}
+                  aria-label="Save skill"
+                >
+                  <Bookmark className="h-4 w-4" fill={isFavorite ? 'currentColor' : 'none'} />
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!targetRoutine}
+                  onClick={() => targetRoutine && addSkillToRoutine(targetRoutine.id, skill)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-white disabled:bg-[var(--accent-soft)] disabled:text-[var(--text-tertiary)]"
+                  title={targetRoutine ? `Add to ${targetRoutine.name}` : 'Create a matching routine first'}
+                  aria-label="Add skill to routine"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
             );
-          })}
-        </div>
-      )}
+          })
+        )}
+      </section>
     </div>
   );
 };
