@@ -55,7 +55,7 @@ export const SkillDetailModal: React.FC = () => {
         aria-modal="true"
         aria-label={selectedSkill.name}
         onMouseDown={(event) => event.stopPropagation()}
-        className="max-h-[92vh] w-full overflow-y-auto rounded-t-[30px] border border-[var(--border-subtle)] bg-white p-5 shadow-[var(--shadow-float)] sm:max-w-2xl sm:rounded-[30px] sm:p-6"
+        className="glass-float max-h-[92vh] w-full overflow-y-auto rounded-t-[28px] p-4 sm:max-w-2xl sm:rounded-[28px] sm:p-4"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -78,21 +78,21 @@ export const SkillDetailModal: React.FC = () => {
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <div className="surface-soft rounded-[18px] p-4">
+          <div className="surface-soft rounded-[12px] p-4">
             <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">Type</p>
             <p className="mt-2 text-xs font-semibold">{resolveSkillType(selectedSkill)}</p>
           </div>
-          <div className="surface-soft rounded-[18px] p-4">
+          <div className="surface-soft rounded-[12px] p-4">
             <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">Body focus</p>
             <p className="mt-2 text-xs font-semibold">{resolveBodyPart(selectedSkill)}</p>
           </div>
-          <div className="surface-soft rounded-[18px] p-4">
+          <div className="surface-soft rounded-[12px] p-4">
             <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">Element group</p>
             <p className="mt-2 text-xs font-semibold">Group {selectedSkill.elementGroupNumber}</p>
           </div>
         </div>
 
-        <div className="mt-5 rounded-[20px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] p-4 sm:p-5">
+        <div className="mt-5 rounded-[12px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] p-4 sm:p-5">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">Technical definition</p>
           <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{selectedSkill.description}</p>
         </div>
@@ -114,7 +114,7 @@ export const SkillDetailModal: React.FC = () => {
               <select
                 value={selectedRoutineId}
                 onChange={(event) => setSelectedRoutineId(event.target.value)}
-                className="h-11 min-w-0 flex-1 rounded-[14px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] px-3 text-xs outline-none"
+                className="h-11 min-w-0 flex-1 rounded-[12px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] px-3 text-xs outline-none"
               >
                 {matchingRoutines.map((routine) => (
                   <option key={routine.id} value={routine.id}>{routine.name} · D {routine.summary.totalDScore.toFixed(2)}</option>
@@ -138,7 +138,7 @@ export const SkillDetailModal: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-3 rounded-[18px] bg-[var(--surface-soft)] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-[12px] bg-[var(--surface-soft)] p-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs leading-5 text-[var(--text-secondary)]">Create a {selectedSkill.apparatus} routine before adding this element.</p>
               <button
                 type="button"
@@ -163,7 +163,7 @@ export const SkillDetailModal: React.FC = () => {
                   key={skill.id}
                   type="button"
                   onClick={() => setSelectedSkill(skill)}
-                  className="flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left hover:bg-[var(--surface-soft)]"
+                  className="flex w-full items-center gap-3 rounded-[12px] px-3 py-3 text-left hover:bg-[var(--surface-soft)]"
                 >
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[var(--accent-soft)] text-[10px] font-bold">{skill.difficulty}</span>
                   <span className="min-w-0 flex-1 truncate text-xs font-semibold">{skill.name}</span>
