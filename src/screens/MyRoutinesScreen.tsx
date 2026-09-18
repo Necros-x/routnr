@@ -14,7 +14,7 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({ onOpenBuilde
       <section className="flex items-end justify-between gap-4">
         <div>
           <p className="text-xs font-medium text-[var(--text-tertiary)]">Saved locally</p>
-          <h1 className="font-display mt-2 text-4xl font-semibold uppercase leading-none tracking-[-0.05em]">
+          <h1 className="font-display mt-2 text-3xl font-semibold uppercase leading-none tracking-[-0.05em] sm:text-4xl">
             Your routines.
           </h1>
         </div>
