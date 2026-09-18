@@ -706,6 +706,8 @@ export const DIFFICULTY_LEVELS: { letter: string; value: number }[] = [
   { letter: 'F', value: 0.6 },
   { letter: 'G', value: 0.7 },
   { letter: 'H', value: 0.8 },
+  { letter: 'I', value: 0.9 },
+  { letter: 'J', value: 1.0 },
 ];
 
 export const ELEMENT_GROUPS = [
