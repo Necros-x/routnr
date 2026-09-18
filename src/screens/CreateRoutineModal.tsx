@@ -52,12 +52,12 @@ export const CreateRoutineModal: React.FC = () => {
         aria-modal="true"
         aria-label="Create routine"
         onMouseDown={(event) => event.stopPropagation()}
-        className="glass-float max-h-[92vh] w-full overflow-y-auto rounded-t-[28px] p-4 sm:max-w-2xl sm:rounded-[28px] sm:p-4"
+        className="glass-float backdrop-blur-[2px] max-h-[92vh] w-full overflow-y-auto rounded-t-[28px] p-4 sm:max-w-2xl sm:rounded-[28px] sm:p-4"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">New workspace</p>
-            <h2 className="font-display mt-1 text-2xl font-semibold">Create a routine</h2>
+            <h2 className="font-display mt-1 text-xl font-semibold">Create a routine</h2>
             <p className="mt-2 text-sm text-[var(--text-secondary)]">Choose the apparatus first. You can build the full sequence next.</p>
           </div>
           <button
