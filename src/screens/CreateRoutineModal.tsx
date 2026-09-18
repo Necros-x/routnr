@@ -46,7 +46,7 @@ export const CreateRoutineModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/20 p-0 backdrop-blur-[3px] sm:items-center sm:p-5" onMouseDown={() => setCreateRoutineModalOpen(false)}>
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/20 p-0 backdrop-blur-[5px] sm:items-center sm:p-5" onMouseDown={() => setCreateRoutineModalOpen(false)}>
       <div
         role="dialog"
         aria-modal="true"

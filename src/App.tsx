@@ -99,7 +99,7 @@ function MainAppContent() {
         </main>
       </div>
 
-      <nav className="glass-nav fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-[30px] p-1.5">
+      <nav className="glass-nav backdrop-blur-[2px] fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-[30px] p-1.5">
         <div className="relative grid grid-cols-4 overflow-hidden rounded-[24px]">
           <motion.div
             aria-hidden="true"
@@ -202,7 +202,7 @@ function MainAppContent() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="glass-float fixed inset-x-4 bottom-[88px] z-40 mx-auto max-w-md rounded-[24px] p-3"
+            className="glass-float backdrop-blur-[2px] fixed inset-x-4 bottom-[88px] z-40 mx-auto max-w-md rounded-[24px] p-3"
           >
             <button
               type="button"
