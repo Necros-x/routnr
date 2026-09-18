@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Plus, X } from 'lucide-react';
 import { useGymnasticsStore } from '../hooks/useGymnasticsStore';
-import { ModalSheet } from '../components/ui/ModalSheet';
-import { PillButton } from '../components/ui/PillButton';
 import { ALL_APPARATUS } from '../data/mockSkills';
 import { Apparatus } from '../types/gymnastics';
 
@@ -17,90 +16,112 @@ export const CreateRoutineModal: React.FC = () => {
   const [selectedApparatus, setSelectedApparatus] = useState<Apparatus>('Floor Exercise');
   const [notes, setNotes] = useState('');
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (!isCreateRoutineModalOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setCreateRoutineModalOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isCreateRoutineModalOpen, setCreateRoutineModalOpen]);
+
+  if (!isCreateRoutineModalOpen) return null;
+
+  const handleCreate = (event: React.FormEvent) => {
+    event.preventDefault();
     const newId = createRoutine(
-      name.trim() || `${selectedApparatus} Competition Routine`,
+      name.trim() || `${selectedApparatus} Routine`,
       selectedApparatus,
       notes.trim()
     );
-    setCreateRoutineModalOpen(false);
-    openRoutineInBuilder(newId);
-    // Reset form
     setName('');
     setNotes('');
+    setCreateRoutineModalOpen(false);
+    openRoutineInBuilder(newId);
   };
 
   return (
-    <ModalSheet
-      isOpen={isCreateRoutineModalOpen}
-      onClose={() => setCreateRoutineModalOpen(false)}
-      title="Create New Routine"
-      subtitle="Define apparatus and routine parameters"
-    >
-      <form onSubmit={handleCreate} className="space-y-4 pb-4">
-        {/* Routine Name */}
-        <div>
-          <label className="text-xs font-mono uppercase tracking-wider text-neutral-400 block mb-1.5">
-            Routine Name
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Olympic Trials Floor Set"
-            className="w-full h-11 px-3.5 rounded-2xl bg-white/[0.05] border border-white/[0.1] text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20"
-          />
-        </div>
-
-        {/* Apparatus Selector */}
-        <div>
-          <label className="text-xs font-mono uppercase tracking-wider text-neutral-400 block mb-1.5">
-            Apparatus
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {ALL_APPARATUS.map((app) => {
-              const isSelected = selectedApparatus === app.name;
-              return (
-                <button
-                  key={app.name}
-                  type="button"
-                  onClick={() => setSelectedApparatus(app.name as Apparatus)}
-                  className={`h-11 px-3 rounded-xl border flex items-center justify-between text-xs transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-white text-black font-semibold border-white shadow-sm'
-                      : 'bg-white/[0.04] text-neutral-300 border-white/[0.08] hover:bg-white/[0.08] hover:text-white'
-                  }`}
-                >
-                  <span>{app.name}</span>
-                  <span className="font-mono text-[10px] opacity-75">{app.code}</span>
-                </button>
-              );
-            })}
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/20 p-0 backdrop-blur-[3px] sm:items-center sm:p-5" onMouseDown={() => setCreateRoutineModalOpen(false)}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Create routine"
+        onMouseDown={(event) => event.stopPropagation()}
+        className="max-h-[92vh] w-full overflow-y-auto rounded-t-[30px] border border-[var(--border-subtle)] bg-white p-5 shadow-[var(--shadow-float)] sm:max-w-2xl sm:rounded-[30px] sm:p-6"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">New workspace</p>
+            <h2 className="font-display mt-1 text-2xl font-semibold">Create a routine</h2>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">Choose the apparatus first. You can build the full sequence next.</p>
           </div>
+          <button
+            type="button"
+            onClick={() => setCreateRoutineModalOpen(false)}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--surface-soft)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
-        {/* Coaching Notes */}
-        <div>
-          <label className="text-xs font-mono uppercase tracking-wider text-neutral-400 block mb-1.5">
-            Tactical / Training Notes (Optional)
-          </label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            placeholder="e.g., Focus on sticking dismount, test alternate punch entry in warmup..."
-            className="w-full p-3 rounded-2xl bg-white/[0.05] border border-white/[0.1] text-sm text-white placeholder:text-neutral-500 focus:outline-none focus:border-white/40 focus:ring-1 focus:ring-white/20 resize-none"
-          />
-        </div>
+        <form onSubmit={handleCreate} className="mt-6 space-y-5">
+          <div>
+            <label className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">Routine name</label>
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder={`${selectedApparatus} Routine`}
+              autoFocus
+              className="mt-2 h-12 w-full rounded-[16px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] px-4 text-sm outline-none transition-colors placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-strong)]"
+            />
+          </div>
 
-        {/* Submit */}
-        <div className="pt-2">
-          <PillButton type="submit" variant="primary" fullWidth size="lg">
-            Create & Open Builder
-          </PillButton>
-        </div>
-      </form>
-    </ModalSheet>
+          <div>
+            <label className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">Apparatus</label>
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {ALL_APPARATUS.map((item) => {
+                const selected = selectedApparatus === item.name;
+                return (
+                  <button
+                    key={item.name}
+                    type="button"
+                    onClick={() => setSelectedApparatus(item.name as Apparatus)}
+                    className={`rounded-[16px] border p-3 text-left transition-colors ${selected ? 'border-[var(--accent)] bg-[var(--accent)] text-white' : 'border-[var(--border-subtle)] bg-[var(--surface-soft)] text-[var(--text-primary)] hover:border-[var(--border-medium)]'}`}
+                  >
+                    <span className="block text-[10px] font-black tracking-[-0.03em] opacity-70">{item.code}</span>
+                    <span className="mt-3 block text-xs font-semibold">{item.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">Notes <span className="normal-case tracking-normal">(optional)</span></label>
+            <textarea
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              rows={3}
+              placeholder="Training goal, connection ideas, landing cues…"
+              className="mt-2 w-full resize-none rounded-[16px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] p-4 text-sm leading-6 outline-none transition-colors placeholder:text-[var(--text-tertiary)] focus:border-[var(--border-strong)]"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+          >
+            <Plus className="h-4 w-4" />
+            Create and open builder
+          </button>
+        </form>
+      </div>
+    </div>
   );
 };
