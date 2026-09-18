@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { House, Search, ListChecks, Menu, Plus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { GymnasticsStoreProvider, useGymnasticsStore } from './hooks/useGymnasticsStore';
@@ -31,7 +31,6 @@ function MainAppContent() {
   } = useGymnasticsStore();
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [edgeCompression, setEdgeCompression] = useState<0 | 3 | null>(null);
 
   const changeTab = (tab: ActiveTab) => {
     if (tab !== 'routines') setActiveRoutineId(null);
@@ -51,26 +50,6 @@ function MainAppContent() {
       : activeTab === 'skills'
         ? 1
         : 2;
-
-  const previousNavIndex = useRef(activeNavIndex);
-
-  useEffect(() => {
-    const previous = previousNavIndex.current;
-
-    if (previous !== activeNavIndex && (activeNavIndex === 0 || activeNavIndex === 3)) {
-      setEdgeCompression(activeNavIndex);
-
-      const timer = window.setTimeout(() => {
-        setEdgeCompression(null);
-      }, 440);
-
-      previousNavIndex.current = activeNavIndex;
-      return () => window.clearTimeout(timer);
-    }
-
-    setEdgeCompression(null);
-    previousNavIndex.current = activeNavIndex;
-  }, [activeNavIndex]);
 
   const itemClass =
     'relative z-10 flex h-12 items-center justify-center rounded-full transition-colors duration-150';
@@ -121,38 +100,12 @@ function MainAppContent() {
       </div>
 
       <nav className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-full border border-[var(--border-medium)] bg-white/95 p-1.5 shadow-[0_18px_45px_rgba(28,28,25,0.12)] backdrop-blur-xl">
-        <div className="relative grid grid-cols-4">
+        <div className="relative grid grid-cols-4 overflow-hidden rounded-full">
           <motion.div
             aria-hidden="true"
             className="pointer-events-none absolute inset-y-0 left-0 w-1/4 rounded-full bg-[var(--accent)]"
-            style={{
-              transformOrigin:
-                edgeCompression === 0
-                  ? 'right center'
-                  : edgeCompression === 3
-                    ? 'left center'
-                    : 'center',
-            }}
-            animate={{
-              x: `${activeNavIndex * 100}%`,
-              scaleX: edgeCompression !== null ? 0.82 : 1,
-            }}
-            transition={{
-              x: NAV_SLIDE,
-              scaleX: edgeCompression !== null
-                ? {
-                    type: 'spring',
-                    stiffness: 620,
-                    damping: 24,
-                    mass: 0.62,
-                  }
-                : {
-                    type: 'spring',
-                    stiffness: 420,
-                    damping: 30,
-                    mass: 0.7,
-                  },
-            }}
+            animate={{ x: `${activeNavIndex * 100}%` }}
+            transition={NAV_SLIDE}
           />
 
           <button
