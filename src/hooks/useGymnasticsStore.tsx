@@ -1,7 +1,16 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Apparatus, GymnasticSkill, Routine, RoutineSkill, ActiveTab } from '../types/gymnastics';
+import {
+  ActiveTab,
+  AllAroundSummary,
+  Apparatus,
+  GymnasticSkill,
+  MagApparatus,
+  PrimaryRoutineMap,
+  Routine,
+  RoutineSkill,
+} from '../types/gymnastics';
 import { MOCK_ROUTINES } from '../data/mockRoutines';
 import { MOCK_SKILLS } from '../data/mockSkills';
 import {
@@ -9,6 +18,11 @@ import {
   calculateDynamicDScore,
   DynamicDScoreResult,
 } from '../utils/scoreCalculator';
+import {
+  buildAllAroundRows,
+  buildDefaultPrimaryRoutineMap,
+  MAG_APPARATUS_ORDER,
+} from '../config/mag';
 
 export { calculateRoutineScore, calculateDynamicDScore };
 
@@ -41,12 +55,42 @@ interface GymnasticsStoreContextValue {
   calculateActiveRoutineDScore: () => DynamicDScoreResult;
   getActiveRoutine: () => Routine | null;
   openRoutineInBuilder: (id: string) => void;
+  primaryRoutineIds: PrimaryRoutineMap;
+  setPrimaryRoutine: (routineId: string) => void;
+  isPrimaryRoutine: (routineId: string) => boolean;
+  getPrimaryRoutineForApparatus: (apparatus: MagApparatus) => Routine | null;
+  getAllAroundSummary: () => AllAroundSummary;
 }
 
 const GymnasticsStoreContext = createContext<GymnasticsStoreContextValue | null>(null);
 
 const FAVORITES_STORAGE_KEY = 'gym_routine_favorites_v1';
 const ROUTINES_STORAGE_KEY = 'gym_routine_routines_v1';
+const PRIMARY_ROUTINES_STORAGE_KEY = 'gym_routine_primary_routines_v1';
+
+const roundScore = (value: number) => Math.round(value * 100) / 100;
+
+const resolvePrimaryRoutineMap = (
+  routines: Routine[],
+  saved: PrimaryRoutineMap = {},
+): PrimaryRoutineMap => {
+  const resolved = buildDefaultPrimaryRoutineMap(routines);
+
+  MAG_APPARATUS_ORDER.forEach((apparatus) => {
+    const savedId = saved[apparatus];
+    if (
+      savedId &&
+      routines.some(
+        (routine) =>
+          routine.id === savedId && routine.apparatus === apparatus,
+      )
+    ) {
+      resolved[apparatus] = savedId;
+    }
+  });
+
+  return resolved;
+};
 
 export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
@@ -58,6 +102,9 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
     }))
   );
 
+  const [primaryRoutineIds, setPrimaryRoutineIds] = useState<PrimaryRoutineMap>(
+    () => buildDefaultPrimaryRoutineMap(MOCK_ROUTINES),
+  );
   const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<GymnasticSkill | null>(null);
   const [favoriteSkillIds, setFavoriteSkillIds] = useState<string[]>(['fx-01', 'hb-02', 'sr-01']);
@@ -78,16 +125,31 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
     try {
       const savedRoutines = localStorage.getItem(ROUTINES_STORAGE_KEY);
       const savedFavorites = localStorage.getItem(FAVORITES_STORAGE_KEY);
+      const savedPrimaryRoutines = localStorage.getItem(
+        PRIMARY_ROUTINES_STORAGE_KEY,
+      );
+
+      let hydratedRoutines = MOCK_ROUTINES.map((routine) => ({
+        ...routine,
+        summary: calculateRoutineScore(routine.skills, routine.apparatus),
+      }));
 
       if (savedRoutines) {
         const parsed: Routine[] = JSON.parse(savedRoutines);
-        setRoutines(
-          parsed.map((routine) => ({
-            ...routine,
-            summary: calculateRoutineScore(routine.skills, routine.apparatus),
-          }))
-        );
+        hydratedRoutines = parsed.map((routine) => ({
+          ...routine,
+          summary: calculateRoutineScore(routine.skills, routine.apparatus),
+        }));
+        setRoutines(hydratedRoutines);
       }
+
+      const parsedPrimary: PrimaryRoutineMap = savedPrimaryRoutines
+        ? JSON.parse(savedPrimaryRoutines)
+        : {};
+
+      setPrimaryRoutineIds(
+        resolvePrimaryRoutineMap(hydratedRoutines, parsedPrimary),
+      );
 
       if (savedFavorites) {
         setFavoriteSkillIds(JSON.parse(savedFavorites));
@@ -116,6 +178,18 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
       // Browser storage can be unavailable in restricted contexts.
     }
   }, [favoriteSkillIds, hasHydrated]);
+
+  useEffect(() => {
+    if (!hasHydrated) return;
+    try {
+      localStorage.setItem(
+        PRIMARY_ROUTINES_STORAGE_KEY,
+        JSON.stringify(primaryRoutineIds),
+      );
+    } catch {
+      // Browser storage can be unavailable in restricted contexts.
+    }
+  }, [hasHydrated, primaryRoutineIds]);
 
   const toggleFavorite = (skillId: string) => {
     setFavoriteSkillIds((prev) =>
@@ -148,12 +222,50 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
       },
     };
     setRoutines((prev) => [newRoutine, ...prev]);
+
+    if (MAG_APPARATUS_ORDER.includes(apparatus as MagApparatus)) {
+      const magApparatus = apparatus as MagApparatus;
+      setPrimaryRoutineIds((prev) =>
+        prev[magApparatus]
+          ? prev
+          : { ...prev, [magApparatus]: newId },
+      );
+    }
+
     setActiveRoutineId(newId);
     return newId;
   };
 
   const deleteRoutine = (id: string) => {
-    setRoutines((prev) => prev.filter((r) => r.id !== id));
+    const routineToDelete = routines.find((routine) => routine.id === id);
+
+    setRoutines((prev) => prev.filter((routine) => routine.id !== id));
+
+    if (
+      routineToDelete &&
+      MAG_APPARATUS_ORDER.includes(routineToDelete.apparatus as MagApparatus)
+    ) {
+      const apparatus = routineToDelete.apparatus as MagApparatus;
+
+      setPrimaryRoutineIds((prev) => {
+        if (prev[apparatus] !== id) return prev;
+
+        const replacement = routines.find(
+          (routine) =>
+            routine.id !== id && routine.apparatus === apparatus,
+        );
+
+        const next = { ...prev };
+        if (replacement) {
+          next[apparatus] = replacement.id;
+        } else {
+          delete next[apparatus];
+        }
+
+        return next;
+      });
+    }
+
     if (activeRoutineId === id) {
       setActiveRoutineId(null);
     }
@@ -288,6 +400,72 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
     setActiveTab('routines');
   };
 
+  const setPrimaryRoutine = (routineId: string) => {
+    const routine = routines.find((candidate) => candidate.id === routineId);
+    if (
+      !routine ||
+      !MAG_APPARATUS_ORDER.includes(routine.apparatus as MagApparatus)
+    ) {
+      return;
+    }
+
+    const apparatus = routine.apparatus as MagApparatus;
+    setPrimaryRoutineIds((prev) => ({
+      ...prev,
+      [apparatus]: routine.id,
+    }));
+  };
+
+  const isPrimaryRoutine = (routineId: string) => {
+    const routine = routines.find((candidate) => candidate.id === routineId);
+    if (
+      !routine ||
+      !MAG_APPARATUS_ORDER.includes(routine.apparatus as MagApparatus)
+    ) {
+      return false;
+    }
+
+    return (
+      primaryRoutineIds[routine.apparatus as MagApparatus] === routine.id
+    );
+  };
+
+  const getPrimaryRoutineForApparatus = (
+    apparatus: MagApparatus,
+  ): Routine | null => {
+    const routineId = primaryRoutineIds[apparatus];
+    if (!routineId) return null;
+
+    return (
+      routines.find(
+        (routine) =>
+          routine.id === routineId && routine.apparatus === apparatus,
+      ) ?? null
+    );
+  };
+
+  const getAllAroundSummary = (): AllAroundSummary => {
+    const rows = buildAllAroundRows(routines, primaryRoutineIds);
+
+    return {
+      rows,
+      completedEvents: rows.filter((row) => row.routineId).length,
+      totalSkills: rows.reduce((sum, row) => sum + row.skills, 0),
+      totalDifficulty: roundScore(
+        rows.reduce((sum, row) => sum + row.difficultyValue, 0),
+      ),
+      totalGroup: roundScore(
+        rows.reduce((sum, row) => sum + row.groupValue, 0),
+      ),
+      totalConnectionBonus: roundScore(
+        rows.reduce((sum, row) => sum + row.connectionBonus, 0),
+      ),
+      totalDScore: roundScore(
+        rows.reduce((sum, row) => sum + row.dScore, 0),
+      ),
+    };
+  };
+
   return (
     <GymnasticsStoreContext.Provider
       value={{
@@ -319,6 +497,11 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
         calculateActiveRoutineDScore,
         getActiveRoutine,
         openRoutineInBuilder,
+        primaryRoutineIds,
+        setPrimaryRoutine,
+        isPrimaryRoutine,
+        getPrimaryRoutineForApparatus,
+        getAllAroundSummary,
       }}
     >
       {children}

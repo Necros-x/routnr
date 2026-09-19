@@ -10,6 +10,14 @@ export type Apparatus =
 
 export type ApparatusCode = 'FX' | 'PH' | 'SR' | 'VT' | 'PB' | 'HB' | 'BB' | 'UB';
 
+export type MagApparatus =
+  | 'Floor Exercise'
+  | 'Pommel Horse'
+  | 'Still Rings'
+  | 'Vault'
+  | 'Parallel Bars'
+  | 'High Bar';
+
 export type DifficultyLetter = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J';
 
 export type SkillType =
@@ -74,6 +82,30 @@ export interface Routine {
     connectionBonus: number;
     totalDScore: number;
   };
+}
+
+export type PrimaryRoutineMap = Partial<Record<MagApparatus, string>>;
+
+export interface AllAroundRow {
+  apparatus: MagApparatus;
+  code: Exclude<ApparatusCode, 'BB' | 'UB'>;
+  routineId: string | null;
+  routineName: string;
+  skills: number;
+  difficultyValue: number;
+  groupValue: number;
+  connectionBonus: number;
+  dScore: number;
+}
+
+export interface AllAroundSummary {
+  rows: AllAroundRow[];
+  completedEvents: number;
+  totalSkills: number;
+  totalDifficulty: number;
+  totalGroup: number;
+  totalConnectionBonus: number;
+  totalDScore: number;
 }
 
 export type ActiveTab = 'home' | 'skills' | 'routines';
