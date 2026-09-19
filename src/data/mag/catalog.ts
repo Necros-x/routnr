@@ -11,8 +11,14 @@ const MAG_APPARATUS = new Set<MagApparatus>([
   'High Bar',
 ]);
 
-const provisionalSkills: GymnasticSkill[] = MOCK_SKILLS.filter((skill) =>
-  MAG_APPARATUS.has(skill.apparatus as MagApparatus),
+const SOURCE_MIGRATED_APPARATUS = new Set<MagApparatus>([
+  'Floor Exercise',
+]);
+
+const provisionalSkills: GymnasticSkill[] = MOCK_SKILLS.filter(
+  (skill) =>
+    MAG_APPARATUS.has(skill.apparatus as MagApparatus) &&
+    !SOURCE_MIGRATED_APPARATUS.has(skill.apparatus as MagApparatus),
 ).map((skill) => ({
   ...skill,
   verificationStatus: 'provisional',
@@ -32,8 +38,9 @@ const provisionalIds = new Set(provisionalSkills.map((skill) => skill.id));
 /**
  * Migration catalog.
  *
- * Verified records replace provisional records by stable ID. New verified
- * records that did not exist in the legacy sample catalog are appended.
+ * Once an apparatus enters source migration, its legacy sample records are
+ * removed from the live catalog. Verified records are then supplied from the
+ * override layer without silently reusing old sample IDs for different skills.
  */
 export const MAG_SKILLS: GymnasticSkill[] = [
   ...merged,
