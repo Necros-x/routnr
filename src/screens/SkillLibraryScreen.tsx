@@ -38,7 +38,9 @@ export const SkillLibraryScreen: React.FC = () => {
   return (
     <div className="space-y-6">
       <section>
-        <p className="text-xs font-medium text-[var(--text-tertiary)]">FIG 2025–2028</p>
+        <p className="text-xs font-medium text-[var(--text-tertiary)]">
+          MAG 2025–2028 · source migration in progress
+        </p>
         <h1 className="font-display mt-2 text-3xl font-semibold uppercase leading-none tracking-[-0.05em] sm:text-4xl">
           Search skills.
         </h1>
