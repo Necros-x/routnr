@@ -12,7 +12,7 @@ import {
   RoutineSkill,
 } from '../types/gymnastics';
 import { MOCK_ROUTINES } from '../data/mockRoutines';
-import { MOCK_SKILLS } from '../data/mockSkills';
+import { MAG_SKILLS } from '../data/mag/catalog';
 import {
   calculateRoutineScore,
   calculateDynamicDScore,
@@ -103,7 +103,7 @@ const resolvePrimaryRoutineMap = (
 
 export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
-  const [skills] = useState<GymnasticSkill[]>(MOCK_SKILLS);
+  const [skills] = useState<GymnasticSkill[]>(MAG_SKILLS);
   const [routines, setRoutines] = useState<Routine[]>(() =>
     MOCK_ROUTINES.map((routine) => ({
       ...routine,
