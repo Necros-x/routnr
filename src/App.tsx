@@ -32,7 +32,7 @@ function MainAppContent() {
     activeRoutineId,
     setActiveRoutineId,
     routines,
-    setCreateRoutineModalOpen,
+    openCreateRoutineModal,
   } = useGymnasticsStore();
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -258,7 +258,7 @@ function MainAppContent() {
               type="button"
               onClick={() => {
                 setMenuOpen(false);
-                setCreateRoutineModalOpen(true);
+                openCreateRoutineModal();
               }}
               className="mt-1 flex w-full items-center justify-between rounded-[12px] px-4 py-3 text-left hover:bg-white/55"
             >
