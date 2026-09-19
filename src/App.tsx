@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Download, House, Search, ListChecks, Menu, Plus, Settings2, UserRound, X } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { GymnasticsStoreProvider, useGymnasticsStore } from './hooks/useGymnasticsStore';
 import { HomeScreen } from './screens/HomeScreen';
 import { SkillLibraryScreen } from './screens/SkillLibraryScreen';
@@ -24,7 +24,22 @@ const NAV_SLIDE = {
   mass: 0.78,
 };
 
+const SCREEN_SPRING = {
+  type: 'spring' as const,
+  stiffness: 390,
+  damping: 34,
+  mass: 0.82,
+};
+
+const TAB_ORDER: Record<ActiveTab, number> = {
+  home: 0,
+  skills: 1,
+  routines: 2,
+};
+
 function MainAppContent() {
+  const reduceMotion = useReducedMotion();
+
   const {
     activeTab,
     setActiveTab,
@@ -38,6 +53,7 @@ function MainAppContent() {
   const [downloadManagerOpen, setDownloadManagerOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [screenDirection, setScreenDirection] = useState<1 | -1>(1);
 
   useEffect(() => {
     if (
@@ -53,15 +69,37 @@ function MainAppContent() {
     });
   }, []);
 
+  const getScreenPosition = (
+    tab: ActiveTab,
+    routineId: string | null = activeRoutineId,
+  ) => {
+    if (tab === 'routines' && routineId) return 3;
+    return TAB_ORDER[tab];
+  };
+
   const changeTab = (tab: ActiveTab) => {
+    const nextRoutineId = tab === 'routines' ? activeRoutineId : null;
+    const currentPosition = getScreenPosition(activeTab, activeRoutineId);
+    const nextPosition = getScreenPosition(tab, nextRoutineId);
+
+    if (nextPosition !== currentPosition) {
+      setScreenDirection(nextPosition > currentPosition ? 1 : -1);
+    }
+
     if (tab !== 'routines') setActiveRoutineId(null);
     setActiveTab(tab);
     setMenuOpen(false);
   };
 
   const openBuilder = (routineId: string) => {
+    setScreenDirection(1);
     setActiveRoutineId(routineId);
     setActiveTab('routines');
+  };
+
+  const closeBuilder = () => {
+    setScreenDirection(-1);
+    setActiveRoutineId(null);
   };
 
   const activeNavIndex = menuOpen
@@ -74,6 +112,14 @@ function MainAppContent() {
 
   const itemClass =
     'relative z-10 flex h-12 items-center justify-center rounded-[24px] transition-colors duration-150';
+
+  const screenKey =
+    activeTab === 'routines' && activeRoutineId
+      ? `builder-${activeRoutineId}`
+      : activeTab;
+
+  const screenInitialX = reduceMotion ? 0 : screenDirection * 54;
+  const screenExitX = reduceMotion ? 0 : screenDirection * -54;
 
   return (
     <div className="min-h-screen bg-[var(--app-bg)] text-[var(--text-primary)]">
@@ -98,15 +144,44 @@ function MainAppContent() {
           </button>
         </header>
 
-        <main className="mt-8">
-          {activeTab === 'home' && <HomeScreen />}
-          {activeTab === 'skills' && <SkillLibraryScreen />}
-          {activeTab === 'routines' &&
-            (activeRoutineId ? (
-              <RoutineBuilderScreen onBack={() => setActiveRoutineId(null)} />
-            ) : (
-              <MyRoutinesScreen onOpenBuilder={openBuilder} />
-            ))}
+        <main className="mt-8 overflow-x-clip">
+          <AnimatePresence
+            initial={false}
+            mode="popLayout"
+            custom={screenDirection}
+          >
+            <motion.section
+              key={screenKey}
+              custom={screenDirection}
+              initial={{
+                x: screenInitialX,
+                opacity: 0,
+              }}
+              animate={{
+                x: 0,
+                opacity: 1,
+              }}
+              exit={{
+                x: screenExitX,
+                opacity: 0,
+              }}
+              transition={
+                reduceMotion
+                  ? { duration: 0.14, ease: 'easeOut' }
+                  : SCREEN_SPRING
+              }
+              className="w-full"
+            >
+              {activeTab === 'home' && <HomeScreen />}
+              {activeTab === 'skills' && <SkillLibraryScreen />}
+              {activeTab === 'routines' &&
+                (activeRoutineId ? (
+                  <RoutineBuilderScreen onBack={closeBuilder} />
+                ) : (
+                  <MyRoutinesScreen onOpenBuilder={openBuilder} />
+                ))}
+            </motion.section>
+          </AnimatePresence>
         </main>
       </div>
 
