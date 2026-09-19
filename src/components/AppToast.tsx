@@ -51,8 +51,8 @@ export function AppToast({
         <button
           type="button"
           onClick={() => {
-            onAction();
             onDone();
+            onAction();
           }}
           className="ml-1 shrink-0 rounded-[14px] bg-white/60 px-2.5 py-1.5 text-[10px] font-bold text-[var(--text-primary)] hover:bg-white/80"
         >
