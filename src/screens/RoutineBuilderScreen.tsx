@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence } from 'motion/react';
 import {
+  AlertTriangle,
   ArrowLeft,
+  Check,
   ChevronDown,
   ChevronUp,
   Link2,
@@ -8,6 +11,7 @@ import {
   Search,
   Trash2,
 } from 'lucide-react';
+import { AppToast } from '../components/AppToast';
 import { useGymnasticsStore } from '../hooks/useGymnasticsStore';
 import { DIFFICULTY_LEVELS } from '../data/mockSkills';
 
@@ -15,9 +19,12 @@ interface RoutineBuilderScreenProps {
   onBack: () => void;
 }
 
-export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBack }) => {
+export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
+  onBack,
+}) => {
   const {
     getActiveRoutine,
+    calculateActiveRoutineDScore,
     skills,
     addSkillToRoutine,
     removeSkillFromRoutine,
@@ -35,6 +42,9 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBa
   const [difficulty, setDifficulty] = useState('All');
   const [title, setTitle] = useState(routine?.name ?? '');
   const [notes, setNotes] = useState(routine?.notes ?? '');
+  const [toast, setToast] = useState<{ id: number; message: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     setTitle(routine?.name ?? '');
@@ -48,12 +58,15 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBa
 
     return skills.filter((skill) => {
       const matchesApparatus = skill.apparatus === routine.apparatus;
-      const matchesDifficulty = difficulty === 'All' || skill.difficulty === difficulty;
+      const matchesDifficulty =
+        difficulty === 'All' || skill.difficulty === difficulty;
       const matchesQuery =
         !normalized ||
         skill.name.toLowerCase().includes(normalized) ||
         skill.figCode.toLowerCase().includes(normalized) ||
-        skill.aliases.some((alias) => alias.toLowerCase().includes(normalized));
+        skill.aliases.some((alias) =>
+          alias.toLowerCase().includes(normalized),
+        );
 
       return matchesApparatus && matchesDifficulty && matchesQuery;
     });
@@ -74,6 +87,27 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBa
     );
   }
 
+  const score = calculateActiveRoutineDScore();
+  const countingIds = new Set(
+    score.countingSkills.map((item) => item.instanceId),
+  );
+  const repeatedIds = new Set(
+    score.repeatedSkills.map((item) => item.instanceId),
+  );
+  const reserveIds = new Set(
+    score.nonCountingSkills
+      .filter((item) => !repeatedIds.has(item.instanceId))
+      .map((item) => item.instanceId),
+  );
+
+  const fulfilledGroups = score.groupFulfillment.filter(
+    (group) => group.isFulfilled,
+  ).length;
+
+  const showToast = (message: string) => {
+    setToast({ id: Date.now(), message });
+  };
+
   const saveTitle = () => {
     const next = title.trim() || routine.name;
     setTitle(next);
@@ -82,6 +116,18 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBa
 
   const saveNotes = () => {
     if (notes !== (routine.notes ?? '')) updateRoutineNotes(routine.id, notes);
+  };
+
+  const openSkill = (skill: (typeof skills)[number]) => {
+    markSkillViewed(skill);
+    setSelectedSkill(skill);
+  };
+
+  const cycleConnection = (instanceId: string, currentValue: number) => {
+    const next =
+      currentValue === 0 ? 0.1 : currentValue === 0.1 ? 0.2 : 0;
+
+    updateSkillConnectionBonus(routine.id, instanceId, next);
   };
 
   return (
@@ -117,29 +163,112 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBa
         />
       </section>
 
-      <section className="grid grid-cols-4 gap-2">
-        <div className="rounded-[18px] border border-[var(--border-medium)] bg-white p-3">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">DV</p>
-          <p className="mt-1 text-lg font-semibold">{routine.summary.difficultyValue.toFixed(1)}</p>
+      <section className="glass-float backdrop-blur-[2px] sticky top-2 z-30 rounded-[24px] p-3">
+        <div className="grid grid-cols-4 gap-2">
+          <div className="rounded-[12px] bg-white/50 p-3">
+            <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-[var(--text-tertiary)]">
+              DV
+            </p>
+            <p className="mt-1 text-base font-semibold">
+              {score.difficultyValue.toFixed(1)}
+            </p>
+          </div>
+
+          <div className="rounded-[12px] bg-white/50 p-3">
+            <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-[var(--text-tertiary)]">
+              EG
+            </p>
+            <p className="mt-1 text-base font-semibold">
+              {score.elementGroupValue.toFixed(1)}
+            </p>
+          </div>
+
+          <div className="rounded-[12px] bg-white/50 p-3">
+            <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-[var(--text-tertiary)]">
+              CV
+            </p>
+            <p className="mt-1 text-base font-semibold">
+              {score.connectionBonus.toFixed(1)}
+            </p>
+          </div>
+
+          <div className="rounded-[12px] bg-[var(--accent)] p-3 text-white">
+            <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-white/60">
+              D
+            </p>
+            <p className="mt-1 text-base font-semibold">
+              {score.totalDScore.toFixed(2)}
+            </p>
+          </div>
         </div>
-        <div className="rounded-[18px] border border-[var(--border-medium)] bg-white p-3">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">EG</p>
-          <p className="mt-1 text-lg font-semibold">{routine.summary.elementGroupValue.toFixed(1)}</p>
+
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1">
+          <p className="text-[9px] font-medium text-[var(--text-tertiary)]">
+            {score.countingSkills.length}/8 counting · {fulfilledGroups}/4 groups
+          </p>
+          {(score.repeatedSkills.length > 0 || reserveIds.size > 0) && (
+            <p className="inline-flex items-center gap-1 text-[9px] font-medium text-[var(--text-tertiary)]">
+              <AlertTriangle className="h-3 w-3" />
+              {score.repeatedSkills.length > 0
+                ? `${score.repeatedSkills.length} repeated`
+                : `${reserveIds.size} reserve`}
+            </p>
+          )}
         </div>
-        <div className="rounded-[18px] border border-[var(--border-medium)] bg-white p-3">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">CV</p>
-          <p className="mt-1 text-lg font-semibold">{routine.summary.connectionBonus.toFixed(1)}</p>
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold tracking-[-0.03em]">
+              Element groups
+            </h2>
+            <p className="mt-0.5 text-[10px] text-[var(--text-tertiary)]">
+              Current ROUTNR calculation
+            </p>
+          </div>
+
+          <span className="text-[10px] font-semibold text-[var(--text-tertiary)]">
+            {fulfilledGroups}/4 complete
+          </span>
         </div>
-        <div className="rounded-[18px] bg-[var(--accent)] p-3 text-white">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/60">D</p>
-          <p className="mt-1 text-lg font-semibold">{routine.summary.totalDScore.toFixed(2)}</p>
+
+        <div className="grid grid-cols-2 gap-2 rounded-[24px] border border-[var(--border-medium)] bg-white p-3 sm:grid-cols-4">
+          {score.groupFulfillment.map((group) => (
+            <div
+              key={group.groupNumber}
+              className={`rounded-[12px] p-3 ${
+                group.isFulfilled
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'bg-[var(--surface-soft)] text-[var(--text-secondary)]'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p
+                  className={`text-[9px] font-bold uppercase tracking-[0.1em] ${
+                    group.isFulfilled
+                      ? 'text-white/65'
+                      : 'text-[var(--text-tertiary)]'
+                  }`}
+                >
+                  EG {['I', 'II', 'III', 'IV'][group.groupNumber - 1]}
+                </p>
+                {group.isFulfilled && <Check className="h-3.5 w-3.5" />}
+              </div>
+              <p className="mt-2 line-clamp-2 text-[10px] font-semibold leading-4">
+                {group.name}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
       <section>
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold tracking-[-0.03em]">Routine</h2>
-          <span className="text-[10px] font-medium text-[var(--text-tertiary)]">Tap a skill for details</span>
+          <span className="text-[10px] font-medium text-[var(--text-tertiary)]">
+            Tap skill for details
+          </span>
         </div>
 
         <div className="overflow-hidden rounded-[24px] border border-[var(--border-medium)] bg-white">
@@ -149,92 +278,130 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBa
                 <Plus className="h-4 w-4" />
               </span>
               <p className="mt-4 text-sm font-semibold">Add your first skill</p>
-              <p className="mt-1 text-xs text-[var(--text-tertiary)]">Use the search section below.</p>
+              <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+                Search this apparatus below and add an element.
+              </p>
             </div>
           ) : (
             routine.skills.map((item, index) => {
               const connectionBonus = item.connectionBonus || 0;
+              const isRepeated = repeatedIds.has(item.instanceId);
+              const isReserve = reserveIds.has(item.instanceId);
+              const isCounting = countingIds.has(item.instanceId);
+
+              const statusLabel = isRepeated
+                ? 'Repeated'
+                : isReserve
+                  ? 'Reserve'
+                  : isCounting
+                    ? 'Counting'
+                    : 'Added';
 
               return (
                 <div
                   key={item.instanceId}
-                  className={`flex items-center gap-3 p-3.5 sm:p-4 ${
+                  className={`p-3.5 sm:p-4 ${
                     index > 0 ? 'border-t border-[var(--border-subtle)]' : ''
                   }`}
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[var(--surface-soft)] text-[10px] font-bold text-[var(--text-tertiary)]">
-                    {index + 1}
-                  </span>
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[var(--surface-soft)] text-[10px] font-bold text-[var(--text-tertiary)]">
+                      {index + 1}
+                    </span>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      markSkillViewed(item.skill);
-                      setSelectedSkill(item.skill);
-                    }}
-                    className="min-w-0 flex-1 text-left"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-semibold">{item.skill.name}</span>
-                      <span className="shrink-0 rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[9px] font-bold">
-                        {item.skill.difficulty}
-                      </span>
+                    <button
+                      type="button"
+                      onClick={() => openSkill(item.skill)}
+                      className="min-w-0 flex-1 text-left"
+                    >
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                          {item.skill.name}
+                        </span>
+                        <span className="shrink-0 rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[9px] font-bold">
+                          {item.skill.difficulty}
+                        </span>
+                      </div>
+
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] ${
+                            isRepeated
+                              ? 'bg-[#fff1f1] text-[var(--danger)]'
+                              : isCounting
+                                ? 'bg-[var(--accent)] text-white'
+                                : 'bg-[var(--surface-hover)] text-[var(--text-secondary)]'
+                          }`}
+                        >
+                          {statusLabel}
+                        </span>
+                        <span className="text-[9px] text-[var(--text-tertiary)]">
+                          FIG {item.skill.figCode} · Group{' '}
+                          {item.skill.elementGroupNumber}
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-2 pl-12">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        cycleConnection(item.instanceId, connectionBonus)
+                      }
+                      className={`inline-flex h-8 items-center gap-1.5 rounded-[16px] px-3 text-[9px] font-semibold ${
+                        connectionBonus > 0
+                          ? 'bg-[var(--accent)] text-white'
+                          : 'bg-[var(--surface-soft)] text-[var(--text-secondary)]'
+                      }`}
+                      aria-label={`Cycle connection value for ${item.skill.name}`}
+                    >
+                      <Link2 className="h-3.5 w-3.5" />
+                      {connectionBonus > 0
+                        ? `CV +${connectionBonus.toFixed(1)}`
+                        : 'Add CV'}
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={() =>
+                          moveSkillOrder(routine.id, index, 'up')
+                        }
+                        className="flex h-8 w-8 items-center justify-center rounded-[16px] text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)] disabled:opacity-20"
+                        aria-label={`Move ${item.skill.name} up`}
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={index === routine.skills.length - 1}
+                        onClick={() =>
+                          moveSkillOrder(routine.id, index, 'down')
+                        }
+                        className="flex h-8 w-8 items-center justify-center rounded-[16px] text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)] disabled:opacity-20"
+                        aria-label={`Move ${item.skill.name} down`}
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          removeSkillFromRoutine(
+                            routine.id,
+                            item.instanceId,
+                          );
+                          showToast('Skill removed');
+                        }}
+                        className="flex h-8 w-8 items-center justify-center rounded-[16px] text-[var(--text-tertiary)] hover:bg-[#fff1f1] hover:text-[var(--danger)]"
+                        aria-label={`Remove ${item.skill.name}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
-                    <p className="mt-1 truncate text-[10px] text-[var(--text-tertiary)]">
-                      FIG {item.skill.figCode} · Group {item.skill.elementGroupNumber}
-                    </p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next =
-                        connectionBonus === 0
-                          ? 0.1
-                          : connectionBonus === 0.1
-                            ? 0.2
-                            : 0;
-
-                      updateSkillConnectionBonus(routine.id, item.instanceId, next);
-                    }}
-                    className={`hidden h-8 shrink-0 items-center gap-1 rounded-full px-2.5 text-[10px] font-semibold sm:inline-flex ${
-                      connectionBonus > 0
-                        ? 'bg-[var(--accent)] text-white'
-                        : 'bg-[var(--surface-soft)] text-[var(--text-tertiary)]'
-                    }`}
-                    title="Cycle connection value"
-                  >
-                    <Link2 className="h-3.5 w-3.5" />
-                    {connectionBonus > 0 ? `+${connectionBonus.toFixed(1)}` : 'CV'}
-                  </button>
-
-                  <div className="flex shrink-0 items-center">
-                    <button
-                      type="button"
-                      disabled={index === 0}
-                      onClick={() => moveSkillOrder(routine.id, index, 'up')}
-                      className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)] disabled:opacity-20"
-                      aria-label="Move up"
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      disabled={index === routine.skills.length - 1}
-                      onClick={() => moveSkillOrder(routine.id, index, 'down')}
-                      className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)] disabled:opacity-20"
-                      aria-label="Move down"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeSkillFromRoutine(routine.id, item.instanceId)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-tertiary)] hover:bg-[#fff1f1] hover:text-[var(--danger)]"
-                      aria-label="Remove skill"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
                   </div>
                 </div>
               );
@@ -244,7 +411,9 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBa
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold tracking-[-0.03em]">Add Skills</h2>
+        <h2 className="mb-3 text-lg font-semibold tracking-[-0.03em]">
+          Add skills
+        </h2>
 
         <div className="rounded-[24px] border border-[var(--border-medium)] bg-white p-3">
           <div className="flex h-12 items-center gap-3 rounded-[12px] bg-[var(--surface-soft)] px-4">
@@ -269,6 +438,7 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBa
             >
               All
             </button>
+
             {DIFFICULTY_LEVELS.map((level) => (
               <button
                 key={level.letter}
@@ -293,42 +463,63 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBa
               <p className="mt-3 text-sm font-semibold">No matching skills</p>
             </div>
           ) : (
-            matchingSkills.map((skill, index) => (
-              <div
-                key={skill.id}
-                className={`flex items-center gap-3 p-3.5 sm:p-4 ${
-                  index > 0 ? 'border-t border-[var(--border-subtle)]' : ''
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    markSkillViewed(skill);
-                    setSelectedSkill(skill);
-                  }}
-                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[var(--accent-soft)] text-xs font-bold">
-                    {skill.difficulty}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold">{skill.name}</span>
-                    <span className="mt-1 block truncate text-[10px] text-[var(--text-tertiary)]">
-                      FIG {skill.figCode} · Group {skill.elementGroupNumber}
-                    </span>
-                  </span>
-                </button>
+            matchingSkills.map((skill, index) => {
+              const alreadyAdded = routine.skills.some(
+                (item) => item.skill.figCode === skill.figCode,
+              );
 
-                <button
-                  type="button"
-                  onClick={() => addSkillToRoutine(routine.id, skill)}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-white"
-                  aria-label={`Add ${skill.name}`}
+              return (
+                <div
+                  key={skill.id}
+                  className={`flex items-center gap-3 p-3.5 sm:p-4 ${
+                    index > 0
+                      ? 'border-t border-[var(--border-subtle)]'
+                      : ''
+                  }`}
                 >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-            ))
+                  <button
+                    type="button"
+                    onClick={() => openSkill(skill)}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[var(--accent-soft)] text-xs font-bold">
+                      {skill.difficulty}
+                    </span>
+
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2">
+                        <span className="block min-w-0 flex-1 truncate text-sm font-semibold">
+                          {skill.name}
+                        </span>
+                        {alreadyAdded && (
+                          <span className="shrink-0 rounded-full bg-[var(--surface-hover)] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-[var(--text-tertiary)]">
+                            In routine
+                          </span>
+                        )}
+                      </span>
+
+                      <span className="mt-1 block truncate text-[10px] text-[var(--text-tertiary)]">
+                        FIG {skill.figCode} · Group {skill.elementGroupNumber}
+                      </span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      addSkillToRoutine(routine.id, skill);
+                      showToast(
+                        alreadyAdded ? 'Repeated skill added' : 'Skill added',
+                      );
+                    }}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[18px] bg-[var(--accent)] text-white"
+                    aria-label={`Add ${skill.name}`}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })
           )}
         </div>
       </section>
@@ -344,6 +535,16 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBa
           className="mt-3 w-full resize-none rounded-[22px] border border-[var(--border-medium)] bg-white p-4 text-sm leading-6 outline-none placeholder:text-[var(--text-tertiary)]"
         />
       </section>
+
+      <AnimatePresence>
+        {toast && (
+          <AppToast
+            key={toast.id}
+            message={toast.message}
+            onDone={() => setToast(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
