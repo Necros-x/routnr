@@ -386,7 +386,7 @@ export function DownloadManagerModal({
         <div className="mt-3 rounded-[12px] bg-white/45 p-4">
           <p className="text-xs font-semibold">Official MAG Code of Points</p>
           <p className="mt-1 text-[11px] leading-5 text-[var(--text-tertiary)]">
-            The app’s skill references are based on the current 2025–2028 World Gymnastics Code. The official PDF remains the source document.
+            ROUTNR is being reconciled against the current 2025–2028 MAG Code, its appendix, and MAG technical updates. Entries remain marked provisional until individually verified.
           </p>
           <a
             href={MAG_CODE_PDF_URL}

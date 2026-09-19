@@ -19,7 +19,7 @@ export interface DynamicDScoreResult {
   elementGroupValue: number;
   /** Connection value / bonus points sum */
   connectionBonus: number;
-  /** Total official FIG D-Score (DV + CR + CV) */
+  /** Total from ROUTNR's current provisional DV + EG + CV model */
   totalDScore: number;
   /** The skills recognized for difficulty value (up to 8, sorted by difficulty descending) */
   countingSkills: RoutineSkill[];
@@ -49,21 +49,21 @@ export interface RoutineScoreSummary {
 }
 
 /**
- * Dynamically calculates the official FIG D-Score (Difficulty Score)
- * based on all skills currently added to the routine.
+ * Calculates ROUTNR's current provisional routine difficulty model.
  *
- * Evaluation Rules:
- * 1. FIG recognizes a maximum of 8 counting skills for Difficulty Value (DV).
- * 2. Elements are evaluated without repetition: identical FIG codes can only be
- *    credited once for Difficulty Value.
- * 3. Composition Requirements (CR) grant 0.50 points per fulfilled element group
- *    (up to a maximum of 2.00 for all 4 groups).
- * 4. Connection Bonus (CV) is accumulated from eligible skill combinations.
- * 5. Total D-Score = DV + CR + CV.
+ * This intentionally remains a UI/planning model until the apparatus-specific
+ * 2025–2028 MAG rules are source-verified and implemented in the scoring phase.
+ * Do not treat this function as an authoritative FIG judging calculator.
+ *
+ * Current behavior:
+ * 1. Uses up to 8 unique FIG-code entries for DV.
+ * 2. Flags repeated FIG codes.
+ * 3. Uses a simplified four-group fulfillment model.
+ * 4. Adds manually assigned connection values.
  *
  * @param skills List of skills currently in the routine
- * @param apparatus The apparatus discipline (used for element group definitions)
- * @returns Detailed dynamic score breakdown including counting skills and flags
+ * @param apparatus The apparatus discipline used for provisional group labels
+ * @returns Detailed provisional score breakdown including counting skills and flags
  */
 export function calculateDynamicDScore(
   skills: RoutineSkill[],

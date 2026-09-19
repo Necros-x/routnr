@@ -12,7 +12,7 @@ import {
   RoutineSkill,
 } from '../types/gymnastics';
 import { MOCK_ROUTINES } from '../data/mockRoutines';
-import { MOCK_SKILLS } from '../data/mockSkills';
+import { MAG_SKILLS } from '../data/mag/catalog';
 import {
   calculateRoutineScore,
   calculateDynamicDScore,
@@ -41,9 +41,12 @@ interface GymnasticsStoreContextValue {
   markSkillViewed: (skill: GymnasticSkill) => void;
   isCreateRoutineModalOpen: boolean;
   setCreateRoutineModalOpen: (open: boolean) => void;
+  createRoutineInitialApparatus: Apparatus | null;
+  openCreateRoutineModal: (apparatus?: Apparatus) => void;
   isSkillPickerModalOpen: boolean;
   setSkillPickerModalOpen: (open: boolean) => void;
   createRoutine: (name: string, apparatus: Apparatus, notes?: string) => string;
+  duplicateRoutine: (id: string) => string | null;
   deleteRoutine: (id: string) => void;
   updateRoutineNotes: (id: string, notes: string) => void;
   updateRoutineTitle: (id: string, name: string) => void;
@@ -52,6 +55,12 @@ interface GymnasticsStoreContextValue {
   updateSkillConnectionBonus: (routineId: string, instanceId: string, connectionBonus: number) => void;
   moveSkillOrder: (routineId: string, index: number, direction: 'up' | 'down') => void;
   reorderSkills: (routineId: string, startIndex: number, endIndex: number) => void;
+  reorderRoutineSkills: (routineId: string, orderedInstanceIds: string[]) => void;
+  restoreRoutineSkill: (
+    routineId: string,
+    item: RoutineSkill,
+    index: number,
+  ) => void;
   calculateActiveRoutineDScore: () => DynamicDScoreResult;
   getActiveRoutine: () => Routine | null;
   openRoutineInBuilder: (id: string) => void;
@@ -94,7 +103,7 @@ const resolvePrimaryRoutineMap = (
 
 export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
-  const [skills] = useState<GymnasticSkill[]>(MOCK_SKILLS);
+  const [skills] = useState<GymnasticSkill[]>(MAG_SKILLS);
   const [routines, setRoutines] = useState<Routine[]>(() =>
     MOCK_ROUTINES.map((routine) => ({
       ...routine,
@@ -118,6 +127,8 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
   ]);
 
   const [isCreateRoutineModalOpen, setCreateRoutineModalOpen] = useState(false);
+  const [createRoutineInitialApparatus, setCreateRoutineInitialApparatus] =
+    useState<Apparatus | null>(null);
   const [isSkillPickerModalOpen, setSkillPickerModalOpen] = useState(false);
 
   // Hydrate browser-only data after mount so Next.js can prerender safely.
@@ -205,6 +216,11 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
     .map((id) => skills.find((s) => s.id === id))
     .filter((s): s is GymnasticSkill => !!s);
 
+  const openCreateRoutineModal = (apparatus?: Apparatus) => {
+    setCreateRoutineInitialApparatus(apparatus ?? null);
+    setCreateRoutineModalOpen(true);
+  };
+
   const createRoutine = (name: string, apparatus: Apparatus, notes?: string): string => {
     const newId = `routine-${Date.now()}`;
     const newRoutine: Routine = {
@@ -233,6 +249,47 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
     }
 
     setActiveRoutineId(newId);
+    return newId;
+  };
+
+  const duplicateRoutine = (id: string): string | null => {
+    const source = routines.find((routine) => routine.id === id);
+    if (!source) return null;
+
+    const stamp = Date.now();
+    const newId = `routine-${stamp}`;
+
+    const duplicatedSkills = source.skills.map((item, index) => ({
+      ...item,
+      instanceId: `inst-${stamp}-${index}-${Math.random().toString(36).slice(2, 6)}`,
+      order: index + 1,
+    }));
+
+    const baseName = source.name.replace(/ Copy(?: \d+)?$/, '');
+    const sameEventNames = new Set(
+      routines
+        .filter((routine) => routine.apparatus === source.apparatus)
+        .map((routine) => routine.name),
+    );
+
+    let duplicateName = `${baseName} Copy`;
+    let copyNumber = 2;
+
+    while (sameEventNames.has(duplicateName)) {
+      duplicateName = `${baseName} Copy ${copyNumber}`;
+      copyNumber += 1;
+    }
+
+    const duplicate: Routine = {
+      ...source,
+      id: newId,
+      name: duplicateName,
+      lastEdited: 'Just now',
+      skills: duplicatedSkills,
+      summary: calculateRoutineScore(duplicatedSkills, source.apparatus),
+    };
+
+    setRoutines((prev) => [duplicate, ...prev]);
     return newId;
   };
 
@@ -278,8 +335,13 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
   };
 
   const updateRoutineTitle = (id: string, name: string) => {
+    const nextName = name.trim();
+    if (!nextName) return;
+
     setRoutines((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, name, lastEdited: 'Just now' } : r))
+      prev.map((r) =>
+        r.id === id ? { ...r, name: nextName, lastEdited: 'Just now' } : r,
+      ),
     );
   };
 
@@ -379,6 +441,67 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
           lastEdited: 'Just now',
         };
       })
+    );
+  };
+
+  const reorderRoutineSkills = (
+    routineId: string,
+    orderedInstanceIds: string[],
+  ) => {
+    setRoutines((prev) =>
+      prev.map((routine) => {
+        if (routine.id !== routineId) return routine;
+
+        const byId = new Map(
+          routine.skills.map((item) => [item.instanceId, item]),
+        );
+
+        const ordered = orderedInstanceIds
+          .map((instanceId) => byId.get(instanceId))
+          .filter((item): item is RoutineSkill => Boolean(item));
+
+        if (ordered.length !== routine.skills.length) return routine;
+
+        const updated = ordered.map((item, index) => ({
+          ...item,
+          order: index + 1,
+        }));
+
+        return {
+          ...routine,
+          skills: updated,
+          summary: calculateRoutineScore(updated, routine.apparatus),
+          lastEdited: 'Just now',
+        };
+      }),
+    );
+  };
+
+  const restoreRoutineSkill = (
+    routineId: string,
+    item: RoutineSkill,
+    index: number,
+  ) => {
+    setRoutines((prev) =>
+      prev.map((routine) => {
+        if (routine.id !== routineId) return routine;
+
+        const insertAt = Math.max(0, Math.min(index, routine.skills.length));
+        const nextSkills = [...routine.skills];
+        nextSkills.splice(insertAt, 0, item);
+
+        const updated = nextSkills.map((skill, nextIndex) => ({
+          ...skill,
+          order: nextIndex + 1,
+        }));
+
+        return {
+          ...routine,
+          skills: updated,
+          summary: calculateRoutineScore(updated, routine.apparatus),
+          lastEdited: 'Just now',
+        };
+      }),
     );
   };
 
@@ -483,9 +606,12 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
         markSkillViewed,
         isCreateRoutineModalOpen,
         setCreateRoutineModalOpen,
+        createRoutineInitialApparatus,
+        openCreateRoutineModal,
         isSkillPickerModalOpen,
         setSkillPickerModalOpen,
         createRoutine,
+        duplicateRoutine,
         deleteRoutine,
         updateRoutineNotes,
         updateRoutineTitle,
@@ -494,6 +620,8 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
         updateSkillConnectionBonus,
         moveSkillOrder,
         reorderSkills,
+        reorderRoutineSkills,
+        restoreRoutineSkill,
         calculateActiveRoutineDScore,
         getActiveRoutine,
         openRoutineInBuilder,

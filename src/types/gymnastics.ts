@@ -42,6 +42,19 @@ export interface CodeFigureReference {
   elementNumber?: number;
 }
 
+export type SkillVerificationStatus =
+  | 'provisional'
+  | 'verified'
+  | 'amended';
+
+export interface SkillSourceReference {
+  sourceId: string;
+  page?: number;
+  elementNumber?: string;
+  verifiedAt?: string;
+  note?: string;
+}
+
 export interface GymnasticSkill {
   id: string;
   name: string;
@@ -58,6 +71,8 @@ export interface GymnasticSkill {
   bodyPart?: BodyPartFocus;
   relatedSkillIds?: string[];
   codeFigure?: CodeFigureReference;
+  verificationStatus?: SkillVerificationStatus;
+  sourceRefs?: SkillSourceReference[];
 }
 
 export interface RoutineSkill {

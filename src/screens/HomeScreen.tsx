@@ -7,7 +7,7 @@ export const HomeScreen: React.FC = () => {
     routines,
     setActiveTab,
     openRoutineInBuilder,
-    setCreateRoutineModalOpen,
+    openCreateRoutineModal,
   } = useGymnasticsStore();
 
   const latestRoutine = routines[0] ?? null;
@@ -75,7 +75,7 @@ export const HomeScreen: React.FC = () => {
         ) : (
           <button
             type="button"
-            onClick={() => setCreateRoutineModalOpen(true)}
+            onClick={() => openCreateRoutineModal()}
             className="flex min-h-[190px] w-full flex-col items-center justify-center rounded-[26px] border border-dashed border-[var(--border-strong)] bg-white text-center"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent)] text-white">
@@ -92,7 +92,7 @@ export const HomeScreen: React.FC = () => {
           <h2 className="text-lg font-semibold tracking-[-0.03em]">Your Routines</h2>
           <button
             type="button"
-            onClick={() => setCreateRoutineModalOpen(true)}
+            onClick={() => openCreateRoutineModal()}
             className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-medium)] bg-white text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             aria-label="Create routine"
           >
@@ -139,7 +139,7 @@ export const HomeScreen: React.FC = () => {
               <button
                 key={slot}
                 type="button"
-                onClick={() => setCreateRoutineModalOpen(true)}
+                onClick={() => openCreateRoutineModal()}
                 className="flex min-h-[135px] items-center justify-center rounded-[22px] border border-dashed border-[var(--border-medium)] bg-white/60 text-[var(--text-tertiary)]"
               >
                 <Plus className="h-4 w-4" />

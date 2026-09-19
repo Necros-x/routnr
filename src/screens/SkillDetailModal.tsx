@@ -23,7 +23,7 @@ export const SkillDetailModal: React.FC = () => {
     toggleFavorite,
     routines,
     addSkillToRoutine,
-    setCreateRoutineModalOpen,
+    openCreateRoutineModal,
     skills,
   } = useGymnasticsStore();
 
@@ -185,7 +185,35 @@ export const SkillDetailModal: React.FC = () => {
           </p>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div
+          className={`mt-4 rounded-[12px] p-3 ${
+            selectedSkill.verificationStatus === 'verified' ||
+            selectedSkill.verificationStatus === 'amended'
+              ? 'bg-white/55'
+              : 'bg-[#fff8e8]'
+          }`}
+        >
+          <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">
+            Catalog status
+          </p>
+          <p className="mt-1.5 text-[11px] font-semibold">
+            {selectedSkill.verificationStatus === 'verified'
+              ? 'Verified against current MAG sources'
+              : selectedSkill.verificationStatus === 'amended'
+                ? 'Verified with amendment applied'
+                : 'Provisional catalog entry'}
+          </p>
+          <p className="mt-1 text-[9px] leading-4 text-[var(--text-tertiary)]">
+            {selectedSkill.verificationStatus === 'verified' ||
+            selectedSkill.verificationStatus === 'amended'
+              ? selectedSkill.sourceRefs?.[0]?.page
+                ? `Source page ${selectedSkill.sourceRefs[0].page}`
+                : 'Source metadata attached to this entry.'
+              : 'This entry has not yet been reconciled against the current Code source set. Use it for ROUTNR development/testing only.'}
+          </p>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
           <div className="rounded-[12px] bg-white/45 p-3">
             <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">
               Type
@@ -285,7 +313,7 @@ export const SkillDetailModal: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setSelectedSkill(null);
-                  setCreateRoutineModalOpen(true);
+                  openCreateRoutineModal(selectedSkill.apparatus);
                 }}
                 className="shrink-0 rounded-full bg-[var(--accent)] px-4 py-2.5 text-xs font-semibold text-white"
               >
