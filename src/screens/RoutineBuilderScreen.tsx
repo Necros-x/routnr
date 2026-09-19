@@ -13,6 +13,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { AppToast } from '../components/AppToast';
+import { ConnectionValueSheet } from '../components/ConnectionValueSheet';
 import { useGymnasticsStore } from '../hooks/useGymnasticsStore';
 import { DIFFICULTY_LEVELS } from '../data/mockSkills';
 import type { RoutineSkill } from '../types/gymnastics';
@@ -88,6 +89,9 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
       index: number;
     };
   } | null>(null);
+  const [connectionTargetId, setConnectionTargetId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     setTitle(routine?.name ?? '');
@@ -147,6 +151,21 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
     (group) => group.isFulfilled,
   ).length;
 
+  const missingGroupLabels = score.missingGroups.map(
+    (group) => ['I', 'II', 'III', 'IV'][group.groupNumber - 1],
+  );
+
+  const routineCheckIssueCount =
+    (score.countingSlotsRemaining > 0 ? 1 : 0) +
+    (score.missingGroups.length > 0 ? 1 : 0) +
+    (score.repeatedSkills.length > 0 ? 1 : 0);
+
+  const routineChecksClear = routineCheckIssueCount === 0;
+
+  const connectionTarget =
+    routine.skills.find((item) => item.instanceId === connectionTargetId) ??
+    null;
+
   const showToast = (message: string) => {
     setToast({ id: Date.now(), message });
   };
@@ -164,13 +183,6 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
   const openSkill = (skill: (typeof skills)[number]) => {
     markSkillViewed(skill);
     setSelectedSkill(skill);
-  };
-
-  const cycleConnection = (instanceId: string, currentValue: number) => {
-    const next =
-      currentValue === 0 ? 0.1 : currentValue === 0.1 ? 0.2 : 0;
-
-    updateSkillConnectionBonus(routine.id, instanceId, next);
   };
 
   return (
@@ -308,6 +320,148 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
 
       <section>
         <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold tracking-[-0.03em]">
+              Routine check
+            </h2>
+            <p className="mt-0.5 text-[10px] text-[var(--text-tertiary)]">
+              Provisional builder checks
+            </p>
+          </div>
+
+          <span
+            className={`rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.08em] ${
+              routineChecksClear
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-[var(--accent-soft)] text-[var(--text-secondary)]'
+            }`}
+          >
+            {routineChecksClear
+              ? 'Clear'
+              : `${routineCheckIssueCount} to review`}
+          </span>
+        </div>
+
+        <div className="rounded-[24px] border border-[var(--border-medium)] bg-white p-3">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3 rounded-[12px] bg-[var(--surface-soft)] p-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[16px] ${
+                    score.countingSlotsRemaining === 0
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'bg-white text-[var(--text-secondary)]'
+                  }`}
+                >
+                  {score.countingSlotsRemaining === 0 ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : (
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold">Counting elements</p>
+                  <p className="mt-0.5 text-[9px] text-[var(--text-tertiary)]">
+                    {score.countingSkills.length}/8 currently counting
+                  </p>
+                </div>
+              </div>
+
+              <span className="shrink-0 text-[10px] font-semibold text-[var(--text-secondary)]">
+                {score.countingSlotsRemaining === 0
+                  ? 'Complete'
+                  : `${score.countingSlotsRemaining} open`}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 rounded-[12px] bg-[var(--surface-soft)] p-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[16px] ${
+                    score.missingGroups.length === 0
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'bg-white text-[var(--text-secondary)]'
+                  }`}
+                >
+                  {score.missingGroups.length === 0 ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : (
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold">Element groups</p>
+                  <p className="mt-0.5 text-[9px] text-[var(--text-tertiary)]">
+                    {score.missingGroups.length === 0
+                      ? 'All current groups represented'
+                      : `Missing EG ${missingGroupLabels.join(', ')}`}
+                  </p>
+                </div>
+              </div>
+
+              <span className="shrink-0 text-[10px] font-semibold text-[var(--text-secondary)]">
+                {fulfilledGroups}/4
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 rounded-[12px] bg-[var(--surface-soft)] p-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[16px] ${
+                    score.repeatedSkills.length === 0
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'bg-[#fff1f1] text-[var(--danger)]'
+                  }`}
+                >
+                  {score.repeatedSkills.length === 0 ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : (
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold">Repeated elements</p>
+                  <p className="mt-0.5 text-[9px] text-[var(--text-tertiary)]">
+                    {score.repeatedSkills.length === 0
+                      ? 'No duplicate FIG elements detected'
+                      : `${score.repeatedSkills.length} repeated element${score.repeatedSkills.length === 1 ? '' : 's'}`}
+                  </p>
+                </div>
+              </div>
+
+              <span className="shrink-0 text-[10px] font-semibold text-[var(--text-secondary)]">
+                {score.repeatedSkills.length === 0
+                  ? 'Clear'
+                  : score.repeatedSkills.length}
+              </span>
+            </div>
+
+            {reserveIds.size > 0 && (
+              <div className="flex items-center justify-between gap-3 rounded-[12px] bg-[var(--surface-soft)] p-3">
+                <div>
+                  <p className="text-xs font-semibold">Reserve elements</p>
+                  <p className="mt-0.5 text-[9px] text-[var(--text-tertiary)]">
+                    Extra recognized elements remain in the routine but are not
+                    currently counted toward DV.
+                  </p>
+                </div>
+                <span className="shrink-0 text-[10px] font-semibold text-[var(--text-secondary)]">
+                  {reserveIds.size}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <p className="mt-3 px-1 text-[9px] leading-4 text-[var(--text-tertiary)]">
+            These checks use ROUTNR’s current provisional model. Final
+            apparatus-specific FIG validation will replace them in the verified
+            scoring phase.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold tracking-[-0.03em]">Routine</h2>
           <span className="text-[10px] font-medium text-[var(--text-tertiary)]">
             Tap skill for details
@@ -412,20 +566,18 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
                       <div className="mt-3 flex items-center justify-between gap-2 pl-[4.75rem]">
                     <button
                       type="button"
-                      onClick={() =>
-                        cycleConnection(item.instanceId, connectionBonus)
-                      }
+                      onClick={() => setConnectionTargetId(item.instanceId)}
                       className={`inline-flex h-8 items-center gap-1.5 rounded-[16px] px-3 text-[9px] font-semibold ${
                         connectionBonus > 0
                           ? 'bg-[var(--accent)] text-white'
                           : 'bg-[var(--surface-soft)] text-[var(--text-secondary)]'
                       }`}
-                      aria-label={`Cycle connection value for ${item.skill.name}`}
+                      aria-label={`Edit connection value for ${item.skill.name}`}
                     >
                       <Link2 className="h-3.5 w-3.5" />
                       {connectionBonus > 0
                         ? `CV +${connectionBonus.toFixed(1)}`
-                        : 'Add CV'}
+                        : 'Set CV'}
                     </button>
 
                     <div className="flex items-center gap-1">
@@ -612,6 +764,27 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
           className="mt-3 w-full resize-none rounded-[22px] border border-[var(--border-medium)] bg-white p-4 text-sm leading-6 outline-none placeholder:text-[var(--text-tertiary)]"
         />
       </section>
+
+      <ConnectionValueSheet
+        item={connectionTarget}
+        isOpen={Boolean(connectionTarget)}
+        onClose={() => setConnectionTargetId(null)}
+        onChange={(value) => {
+          if (!connectionTarget) return;
+
+          updateSkillConnectionBonus(
+            routine.id,
+            connectionTarget.instanceId,
+            value,
+          );
+
+          showToast(
+            value === 0
+              ? 'Connection cleared'
+              : `Connection set to +${value.toFixed(1)}`,
+          );
+        }}
+      />
 
       <AnimatePresence>
         {toast && (
