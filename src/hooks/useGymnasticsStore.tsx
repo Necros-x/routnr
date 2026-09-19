@@ -41,9 +41,12 @@ interface GymnasticsStoreContextValue {
   markSkillViewed: (skill: GymnasticSkill) => void;
   isCreateRoutineModalOpen: boolean;
   setCreateRoutineModalOpen: (open: boolean) => void;
+  createRoutineInitialApparatus: Apparatus | null;
+  openCreateRoutineModal: (apparatus?: Apparatus) => void;
   isSkillPickerModalOpen: boolean;
   setSkillPickerModalOpen: (open: boolean) => void;
   createRoutine: (name: string, apparatus: Apparatus, notes?: string) => string;
+  duplicateRoutine: (id: string) => string | null;
   deleteRoutine: (id: string) => void;
   updateRoutineNotes: (id: string, notes: string) => void;
   updateRoutineTitle: (id: string, name: string) => void;
@@ -118,6 +121,8 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
   ]);
 
   const [isCreateRoutineModalOpen, setCreateRoutineModalOpen] = useState(false);
+  const [createRoutineInitialApparatus, setCreateRoutineInitialApparatus] =
+    useState<Apparatus | null>(null);
   const [isSkillPickerModalOpen, setSkillPickerModalOpen] = useState(false);
 
   // Hydrate browser-only data after mount so Next.js can prerender safely.
@@ -205,6 +210,11 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
     .map((id) => skills.find((s) => s.id === id))
     .filter((s): s is GymnasticSkill => !!s);
 
+  const openCreateRoutineModal = (apparatus?: Apparatus) => {
+    setCreateRoutineInitialApparatus(apparatus ?? null);
+    setCreateRoutineModalOpen(true);
+  };
+
   const createRoutine = (name: string, apparatus: Apparatus, notes?: string): string => {
     const newId = `routine-${Date.now()}`;
     const newRoutine: Routine = {
@@ -233,6 +243,32 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
     }
 
     setActiveRoutineId(newId);
+    return newId;
+  };
+
+  const duplicateRoutine = (id: string): string | null => {
+    const source = routines.find((routine) => routine.id === id);
+    if (!source) return null;
+
+    const stamp = Date.now();
+    const newId = `routine-${stamp}`;
+
+    const duplicatedSkills = source.skills.map((item, index) => ({
+      ...item,
+      instanceId: `inst-${stamp}-${index}-${Math.random().toString(36).slice(2, 6)}`,
+      order: index + 1,
+    }));
+
+    const duplicate: Routine = {
+      ...source,
+      id: newId,
+      name: `${source.name} Copy`,
+      lastEdited: 'Just now',
+      skills: duplicatedSkills,
+      summary: calculateRoutineScore(duplicatedSkills, source.apparatus),
+    };
+
+    setRoutines((prev) => [duplicate, ...prev]);
     return newId;
   };
 
@@ -483,9 +519,12 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
         markSkillViewed,
         isCreateRoutineModalOpen,
         setCreateRoutineModalOpen,
+        createRoutineInitialApparatus,
+        openCreateRoutineModal,
         isSkillPickerModalOpen,
         setSkillPickerModalOpen,
         createRoutine,
+        duplicateRoutine,
         deleteRoutine,
         updateRoutineNotes,
         updateRoutineTitle,
