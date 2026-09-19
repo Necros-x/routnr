@@ -46,18 +46,16 @@ export function RoutineActionsSheet({
 
     setMode('actions');
     setDraftName(routine.name);
+  }, [isOpen, routine?.id]);
+
+  useEffect(() => {
+    if (!isOpen) return;
 
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        if (mode !== 'actions') {
-          setMode('actions');
-        } else {
-          onClose();
-        }
-      }
+      if (event.key === 'Escape') onClose();
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -66,7 +64,7 @@ export function RoutineActionsSheet({
       document.body.style.overflow = previous;
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, routine?.id, onClose, mode]);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !routine) return null;
 
