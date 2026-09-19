@@ -79,6 +79,33 @@ const PRIMARY_ROUTINES_STORAGE_KEY = 'gym_routine_primary_routines_v1';
 
 const roundScore = (value: number) => Math.round(value * 100) / 100;
 
+const bindRoutineToCurrentCatalog = (routine: Routine): Routine => {
+  const currentById = new Map(MAG_SKILLS.map((skill) => [skill.id, skill]));
+
+  const skills = routine.skills.map((item, index) => {
+    const current = currentById.get(item.skillId);
+
+    return {
+      ...item,
+      order: index + 1,
+      skill:
+        current ??
+        ({
+          ...item.skill,
+          verificationStatus:
+            item.skill.verificationStatus ?? 'provisional',
+          sourceRefs: item.skill.sourceRefs ?? [],
+        } satisfies GymnasticSkill),
+    };
+  });
+
+  return {
+    ...routine,
+    skills,
+    summary: calculateRoutineScore(skills, routine.apparatus),
+  };
+};
+
 const resolvePrimaryRoutineMap = (
   routines: Routine[],
   saved: PrimaryRoutineMap = {},
@@ -116,11 +143,15 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
   );
   const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<GymnasticSkill | null>(null);
-  const [favoriteSkillIds, setFavoriteSkillIds] = useState<string[]>(['fx-01', 'hb-02', 'sr-01']);
+  const [favoriteSkillIds, setFavoriteSkillIds] = useState<string[]>([
+    'fx-iii-054',
+    'hb-02',
+    'sr-01',
+  ]);
   const [hasHydrated, setHasHydrated] = useState(false);
 
   const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>([
-    'fx-01',
+    'fx-iii-054',
     'hb-02',
     'ph-03',
     'sr-01',
@@ -140,17 +171,11 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
         PRIMARY_ROUTINES_STORAGE_KEY,
       );
 
-      let hydratedRoutines = MOCK_ROUTINES.map((routine) => ({
-        ...routine,
-        summary: calculateRoutineScore(routine.skills, routine.apparatus),
-      }));
+      let hydratedRoutines = MOCK_ROUTINES.map(bindRoutineToCurrentCatalog);
 
       if (savedRoutines) {
         const parsed: Routine[] = JSON.parse(savedRoutines);
-        hydratedRoutines = parsed.map((routine) => ({
-          ...routine,
-          summary: calculateRoutineScore(routine.skills, routine.apparatus),
-        }));
+        hydratedRoutines = parsed.map(bindRoutineToCurrentCatalog);
         setRoutines(hydratedRoutines);
       }
 
