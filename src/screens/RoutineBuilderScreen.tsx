@@ -112,7 +112,7 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBa
           onKeyDown={(event) => {
             if (event.key === 'Enter') event.currentTarget.blur();
           }}
-          className="font-display mt-3 w-full bg-transparent text-4xl font-semibold tracking-[-0.05em] outline-none"
+          className="font-display mt-3 w-full bg-transparent text-2xl font-semibold tracking-[-0.05em] outline-none sm:text-3xl"
           aria-label="Routine title"
         />
       </section>
@@ -247,7 +247,7 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({ onBa
         <h2 className="mb-3 text-lg font-semibold tracking-[-0.03em]">Add Skills</h2>
 
         <div className="rounded-[24px] border border-[var(--border-medium)] bg-white p-3">
-          <div className="flex h-12 items-center gap-3 rounded-[16px] bg-[var(--surface-soft)] px-4">
+          <div className="flex h-12 items-center gap-3 rounded-[12px] bg-[var(--surface-soft)] px-4">
             <Search className="h-4 w-4 text-[var(--text-tertiary)]" />
             <input
               value={query}

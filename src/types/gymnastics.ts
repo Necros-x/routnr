@@ -10,7 +10,7 @@ export type Apparatus =
 
 export type ApparatusCode = 'FX' | 'PH' | 'SR' | 'VT' | 'PB' | 'HB' | 'BB' | 'UB';
 
-export type DifficultyLetter = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I';
+export type DifficultyLetter = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J';
 
 export type SkillType =
   | 'Acrobatic / Salto'
@@ -27,12 +27,19 @@ export type BodyPartFocus =
   | 'Lower Body'
   | 'Full Body';
 
+export interface CodeFigureReference {
+  src?: string;
+  alt?: string;
+  sourcePage?: number;
+  elementNumber?: number;
+}
+
 export interface GymnasticSkill {
   id: string;
   name: string;
   apparatus: Apparatus;
   difficulty: DifficultyLetter;
-  difficultyValue: number; // e.g., A=0.1, B=0.2, ... H=0.8
+  difficultyValue: number; // e.g., A=0.1, B=0.2, ... J=1.0
   elementGroup: string; // e.g. "I. Non-Acrobatic", "II. Acro Forward", etc.
   elementGroupNumber: 1 | 2 | 3 | 4;
   figCode: string; // FIG Code of Points reference e.g., "1.204"
@@ -42,6 +49,7 @@ export interface GymnasticSkill {
   skillType?: SkillType;
   bodyPart?: BodyPartFocus;
   relatedSkillIds?: string[];
+  codeFigure?: CodeFigureReference;
 }
 
 export interface RoutineSkill {

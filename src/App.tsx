@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { House, Search, ListChecks, Menu, Plus, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Download, House, Search, ListChecks, Menu, Plus, Settings2, UserRound, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { GymnasticsStoreProvider, useGymnasticsStore } from './hooks/useGymnasticsStore';
 import { HomeScreen } from './screens/HomeScreen';
@@ -10,7 +10,11 @@ import { MyRoutinesScreen } from './screens/MyRoutinesScreen';
 import { RoutineBuilderScreen } from './screens/RoutineBuilderScreen';
 import { SkillDetailModal } from './screens/SkillDetailModal';
 import { CreateRoutineModal } from './screens/CreateRoutineModal';
+import { DownloadManagerModal } from './components/DownloadManagerModal';
+import { ProfileModal } from './components/ProfileModal';
+import { SettingsModal } from './components/SettingsModal';
 import { APP_CONFIG } from './config/app';
+import { OFFLINE_STORAGE_KEY } from './config/code';
 import type { ActiveTab } from './types/gymnastics';
 
 const NAV_SLIDE = {
@@ -31,6 +35,23 @@ function MainAppContent() {
   } = useGymnasticsStore();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [downloadManagerOpen, setDownloadManagerOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      !('serviceWorker' in navigator) ||
+      !localStorage.getItem(OFFLINE_STORAGE_KEY)
+    ) {
+      return;
+    }
+
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+      // The download manager can retry registration when the user refreshes the pack.
+    });
+  }, []);
 
   const changeTab = (tab: ActiveTab) => {
     if (tab !== 'routines') setActiveRoutineId(null);
@@ -52,7 +73,7 @@ function MainAppContent() {
         : 2;
 
   const itemClass =
-    'relative z-10 flex h-12 items-center justify-center rounded-full transition-colors duration-150';
+    'relative z-10 flex h-12 items-center justify-center rounded-[24px] transition-colors duration-150';
 
   return (
     <div className="min-h-screen bg-[var(--app-bg)] text-[var(--text-primary)]">
@@ -61,29 +82,19 @@ function MainAppContent() {
           <button
             type="button"
             onClick={() => changeTab('home')}
-            className="text-left"
+            className="text-left text-base font-black tracking-[-0.05em]"
             aria-label="ROUTNR home"
           >
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-medium)] bg-white text-sm font-black tracking-[-0.08em]">
-                R
-              </span>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--text-tertiary)]">
-                  Gymnastics
-                </p>
-                <p className="text-base font-black tracking-[-0.05em]">{APP_CONFIG.name}</p>
-              </div>
-            </div>
+            {APP_CONFIG.name}
           </button>
 
           <button
             type="button"
-            onClick={() => setCreateRoutineModalOpen(true)}
-            className="flex h-10 items-center justify-center rounded-full border border-[var(--border-medium)] bg-white px-4 text-[var(--text-primary)] shadow-sm transition-transform hover:-translate-y-0.5"
-            aria-label="Create routine"
+            onClick={() => setDownloadManagerOpen(true)}
+            className="glass-float backdrop-blur-[2px] flex h-10 w-10 items-center justify-center rounded-[20px] text-[var(--text-primary)] transition-transform hover:-translate-y-0.5"
+            aria-label="Open download manager"
           >
-            <Plus className="h-4 w-4" />
+            <Download className="h-4 w-4" />
           </button>
         </header>
 
@@ -99,11 +110,11 @@ function MainAppContent() {
         </main>
       </div>
 
-      <nav className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-full border border-[var(--border-medium)] bg-white/95 p-1.5 shadow-[0_18px_45px_rgba(28,28,25,0.12)] backdrop-blur-xl">
-        <div className="relative grid grid-cols-4 overflow-hidden rounded-full">
+      <nav className="glass-nav backdrop-blur-[2px] fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-[30px] p-1.5">
+        <div className="relative grid grid-cols-4 overflow-hidden rounded-[24px]">
           <motion.div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 left-0 w-1/4 rounded-full bg-[var(--accent)]"
+            className="pointer-events-none absolute inset-y-0 left-0 w-1/4 rounded-[24px] bg-[var(--accent)]"
             animate={{ x: `${activeNavIndex * 100}%` }}
             transition={NAV_SLIDE}
           />
@@ -202,15 +213,53 @@ function MainAppContent() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-x-4 bottom-[88px] z-40 mx-auto max-w-md rounded-[24px] border border-[var(--border-medium)] bg-white p-3 shadow-[0_18px_45px_rgba(28,28,25,0.12)]"
+            className="glass-float backdrop-blur-[2px] fixed inset-x-4 bottom-[88px] z-40 mx-auto max-w-md rounded-[24px] p-3"
           >
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setProfileOpen(true);
+              }}
+              className="flex w-full items-center justify-between rounded-[12px] px-4 py-3 text-left hover:bg-white/55"
+            >
+              <div className="flex items-center gap-3">
+                <UserRound className="h-4 w-4 text-[var(--text-secondary)]" />
+                <div>
+                  <p className="text-sm font-semibold">Profile</p>
+                  <p className="mt-0.5 text-[11px] text-[var(--text-tertiary)]">
+                    Local gymnast profile
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setSettingsOpen(true);
+              }}
+              className="mt-1 flex w-full items-center justify-between rounded-[12px] px-4 py-3 text-left hover:bg-white/55"
+            >
+              <div className="flex items-center gap-3">
+                <Settings2 className="h-4 w-4 text-[var(--text-secondary)]" />
+                <div>
+                  <p className="text-sm font-semibold">Settings</p>
+                  <p className="mt-0.5 text-[11px] text-[var(--text-tertiary)]">
+                    App preferences and storage
+                  </p>
+                </div>
+              </div>
+            </button>
+
             <button
               type="button"
               onClick={() => {
                 setMenuOpen(false);
                 setCreateRoutineModalOpen(true);
               }}
-              className="flex w-full items-center justify-between rounded-full px-4 py-3 text-left hover:bg-[var(--surface-soft)]"
+              className="mt-1 flex w-full items-center justify-between rounded-[12px] px-4 py-3 text-left hover:bg-white/55"
             >
               <div>
                 <p className="text-sm font-semibold">New routine</p>
@@ -221,7 +270,7 @@ function MainAppContent() {
               <Plus className="h-4 w-4" />
             </button>
 
-            <div className="mt-1 rounded-full bg-[var(--surface-soft)] px-4 py-3">
+            <div className="mt-1 rounded-[12px] bg-white/45 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
                 Code cycle
               </p>
@@ -233,6 +282,19 @@ function MainAppContent() {
 
       <SkillDetailModal />
       <CreateRoutineModal />
+      <DownloadManagerModal
+        isOpen={downloadManagerOpen}
+        onClose={() => setDownloadManagerOpen(false)}
+      />
+      <ProfileModal
+        isOpen={profileOpen}
+        onClose={() => setProfileOpen(false)}
+      />
+      <SettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onOpenDownloads={() => setDownloadManagerOpen(true)}
+      />
     </div>
   );
 }

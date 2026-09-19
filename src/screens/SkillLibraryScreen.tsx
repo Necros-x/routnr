@@ -39,13 +39,13 @@ export const SkillLibraryScreen: React.FC = () => {
     <div className="space-y-6">
       <section>
         <p className="text-xs font-medium text-[var(--text-tertiary)]">FIG 2025–2028</p>
-        <h1 className="font-display mt-2 text-4xl font-semibold uppercase leading-none tracking-[-0.05em]">
+        <h1 className="font-display mt-2 text-3xl font-semibold uppercase leading-none tracking-[-0.05em] sm:text-4xl">
           Search skills.
         </h1>
       </section>
 
       <section className="rounded-[24px] border border-[var(--border-medium)] bg-white p-3">
-        <div className="flex h-13 items-center gap-3 rounded-[17px] bg-[var(--surface-soft)] px-4">
+        <div className="flex h-13 items-center gap-3 rounded-[12px] bg-[var(--surface-soft)] px-4">
           <Search className="h-4.5 w-4.5 shrink-0 text-[var(--text-tertiary)]" />
           <input
             value={query}
