@@ -259,10 +259,25 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
       order: index + 1,
     }));
 
+    const baseName = source.name.replace(/ Copy(?: \\d+)?$/, '');
+    const sameEventNames = new Set(
+      routines
+        .filter((routine) => routine.apparatus === source.apparatus)
+        .map((routine) => routine.name),
+    );
+
+    let duplicateName = `${baseName} Copy`;
+    let copyNumber = 2;
+
+    while (sameEventNames.has(duplicateName)) {
+      duplicateName = `${baseName} Copy ${copyNumber}`;
+      copyNumber += 1;
+    }
+
     const duplicate: Routine = {
       ...source,
       id: newId,
-      name: `${source.name} Copy`,
+      name: duplicateName,
       lastEdited: 'Just now',
       skills: duplicatedSkills,
       summary: calculateRoutineScore(duplicatedSkills, source.apparatus),
@@ -314,8 +329,13 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
   };
 
   const updateRoutineTitle = (id: string, name: string) => {
+    const nextName = name.trim();
+    if (!nextName) return;
+
     setRoutines((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, name, lastEdited: 'Just now' } : r))
+      prev.map((r) =>
+        r.id === id ? { ...r, name: nextName, lastEdited: 'Just now' } : r,
+      ),
     );
   };
 
