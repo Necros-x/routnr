@@ -259,7 +259,7 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
       order: index + 1,
     }));
 
-    const baseName = source.name.replace(/ Copy(?: \\d+)?$/, '');
+    const baseName = source.name.replace(/ Copy(?: \d+)?$/, '');
     const sameEventNames = new Set(
       routines
         .filter((routine) => routine.apparatus === source.apparatus)
