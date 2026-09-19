@@ -8,9 +8,18 @@ import { POPUP_SPRING } from '../config/motion';
 interface AppToastProps {
   message: string;
   onDone: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
+  duration?: number;
 }
 
-export function AppToast({ message, onDone }: AppToastProps) {
+export function AppToast({
+  message,
+  onDone,
+  actionLabel,
+  onAction,
+  duration,
+}: AppToastProps) {
   const onDoneRef = useRef(onDone);
 
   useEffect(() => {
@@ -18,9 +27,10 @@ export function AppToast({ message, onDone }: AppToastProps) {
   }, [onDone]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => onDoneRef.current(), 2200);
+    const timeout = duration ?? (actionLabel && onAction ? 4200 : 2200);
+    const timer = window.setTimeout(() => onDoneRef.current(), timeout);
     return () => window.clearTimeout(timer);
-  }, [message]);
+  }, [actionLabel, duration, message, onAction]);
 
   return (
     <motion.div
@@ -36,6 +46,19 @@ export function AppToast({ message, onDone }: AppToastProps) {
         <Check className="h-3.5 w-3.5" />
       </span>
       <p className="truncate text-xs font-semibold">{message}</p>
+
+      {actionLabel && onAction && (
+        <button
+          type="button"
+          onClick={() => {
+            onAction();
+            onDone();
+          }}
+          className="ml-1 shrink-0 rounded-[14px] bg-white/60 px-2.5 py-1.5 text-[10px] font-bold text-[var(--text-primary)] hover:bg-white/80"
+        >
+          {actionLabel}
+        </button>
+      )}
     </motion.div>
   );
 }
