@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, Reorder, useDragControls } from 'motion/react';
 import {
   AlertTriangle,
@@ -9,6 +9,7 @@ import {
   GripVertical,
   Link2,
   Plus,
+  RotateCcw,
   Search,
   Trash2,
 } from 'lucide-react';
@@ -78,6 +79,9 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
 
   const [query, setQuery] = useState('');
   const [difficulty, setDifficulty] = useState('All');
+  const [elementGroup, setElementGroup] = useState<
+    'All' | 1 | 2 | 3 | 4
+  >('All');
   const [title, setTitle] = useState(routine?.name ?? '');
   const [notes, setNotes] = useState(routine?.notes ?? '');
   const [toast, setToast] = useState<{
@@ -92,6 +96,7 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
   const [connectionTargetId, setConnectionTargetId] = useState<string | null>(
     null,
   );
+  const addSkillsRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     setTitle(routine?.name ?? '');
@@ -107,6 +112,9 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
       const matchesApparatus = skill.apparatus === routine.apparatus;
       const matchesDifficulty =
         difficulty === 'All' || skill.difficulty === difficulty;
+      const matchesGroup =
+        elementGroup === 'All' ||
+        skill.elementGroupNumber === elementGroup;
       const matchesQuery =
         !normalized ||
         skill.name.toLowerCase().includes(normalized) ||
@@ -115,9 +123,14 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
           alias.toLowerCase().includes(normalized),
         );
 
-      return matchesApparatus && matchesDifficulty && matchesQuery;
+      return (
+        matchesApparatus &&
+        matchesDifficulty &&
+        matchesGroup &&
+        matchesQuery
+      );
     });
-  }, [difficulty, query, routine, skills]);
+  }, [difficulty, elementGroup, query, routine, skills]);
 
   if (!routine) {
     return (
@@ -184,6 +197,30 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
     markSkillViewed(skill);
     setSelectedSkill(skill);
   };
+
+  const clearSkillFilters = () => {
+    setQuery('');
+    setDifficulty('All');
+    setElementGroup('All');
+  };
+
+  const focusElementGroup = (groupNumber: 1 | 2 | 3 | 4) => {
+    setQuery('');
+    setDifficulty('All');
+    setElementGroup(groupNumber);
+
+    window.requestAnimationFrame(() => {
+      addSkillsRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  };
+
+  const hasActiveSkillFilters =
+    Boolean(query.trim()) ||
+    difficulty !== 'All' ||
+    elementGroup !== 'All';
 
   return (
     <div className="space-y-6">
@@ -290,13 +327,16 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
 
         <div className="grid grid-cols-2 gap-2 rounded-[24px] border border-[var(--border-medium)] bg-white p-3 sm:grid-cols-4">
           {score.groupFulfillment.map((group) => (
-            <div
+            <button
               key={group.groupNumber}
-              className={`rounded-[12px] p-3 ${
+              type="button"
+              onClick={() => focusElementGroup(group.groupNumber)}
+              className={`rounded-[12px] p-3 text-left transition-transform active:scale-[0.98] ${
                 group.isFulfilled
                   ? 'bg-[var(--accent)] text-white'
-                  : 'bg-[var(--surface-soft)] text-[var(--text-secondary)]'
+                  : 'bg-[var(--surface-soft)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'
               }`}
+              aria-label={`Show skills from element group ${group.groupNumber}`}
             >
               <div className="flex items-center justify-between gap-2">
                 <p
@@ -308,12 +348,16 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
                 >
                   EG {['I', 'II', 'III', 'IV'][group.groupNumber - 1]}
                 </p>
-                {group.isFulfilled && <Check className="h-3.5 w-3.5" />}
+                {group.isFulfilled ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Plus className="h-3.5 w-3.5" />
+                )}
               </div>
               <p className="mt-2 line-clamp-2 text-[10px] font-semibold leading-4">
                 {group.name}
               </p>
-            </div>
+            </button>
           ))}
         </div>
       </section>
@@ -399,9 +443,21 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
                 </div>
               </div>
 
-              <span className="shrink-0 text-[10px] font-semibold text-[var(--text-secondary)]">
-                {fulfilledGroups}/4
-              </span>
+              {score.missingGroups.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    focusElementGroup(score.missingGroups[0].groupNumber)
+                  }
+                  className="shrink-0 rounded-[16px] bg-white px-3 py-2 text-[9px] font-semibold text-[var(--text-primary)]"
+                >
+                  Find skills
+                </button>
+              ) : (
+                <span className="shrink-0 text-[10px] font-semibold text-[var(--text-secondary)]">
+                  {fulfilledGroups}/4
+                </span>
+              )}
             </div>
 
             <div className="flex items-center justify-between gap-3 rounded-[12px] bg-[var(--surface-soft)] p-3">
@@ -639,10 +695,28 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
         </div>
       </section>
 
-      <section>
-        <h2 className="mb-3 text-lg font-semibold tracking-[-0.03em]">
-          Add skills
-        </h2>
+      <section ref={addSkillsRef} className="scroll-mt-28">
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold tracking-[-0.03em]">
+              Add skills
+            </h2>
+            <p className="mt-0.5 text-[10px] text-[var(--text-tertiary)]">
+              {matchingSkills.length} matching element{matchingSkills.length === 1 ? '' : 's'}
+            </p>
+          </div>
+
+          {hasActiveSkillFilters && (
+            <button
+              type="button"
+              onClick={clearSkillFilters}
+              className="inline-flex h-8 items-center gap-1.5 rounded-[16px] px-2.5 text-[9px] font-semibold text-[var(--text-secondary)] hover:bg-white"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reset
+            </button>
+          )}
+        </div>
 
         <div className="rounded-[24px] border border-[var(--border-medium)] bg-white p-3">
           <div className="flex h-12 items-center gap-3 rounded-[12px] bg-[var(--surface-soft)] px-4">
@@ -653,6 +727,35 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
               placeholder={`Search ${routine.apparatus}`}
               className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-tertiary)]"
             />
+          </div>
+
+          <div className="mt-2 flex gap-1 overflow-x-auto no-scrollbar">
+            <button
+              type="button"
+              onClick={() => setElementGroup('All')}
+              className={`h-8 shrink-0 rounded-[16px] px-3 text-[10px] font-bold ${
+                elementGroup === 'All'
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)]'
+              }`}
+            >
+              All groups
+            </button>
+
+            {([1, 2, 3, 4] as const).map((groupNumber) => (
+              <button
+                key={groupNumber}
+                type="button"
+                onClick={() => setElementGroup(groupNumber)}
+                className={`h-8 shrink-0 rounded-[16px] px-3 text-[10px] font-bold ${
+                  elementGroup === groupNumber
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)]'
+                }`}
+              >
+                EG {['I', 'II', 'III', 'IV'][groupNumber - 1]}
+              </button>
+            ))}
           </div>
 
           <div className="mt-2 flex gap-1 overflow-x-auto no-scrollbar">
@@ -690,6 +793,19 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
             <div className="px-6 py-12 text-center">
               <Search className="mx-auto h-5 w-5 text-[var(--text-tertiary)]" />
               <p className="mt-3 text-sm font-semibold">No matching skills</p>
+              <p className="mt-1 text-[10px] leading-4 text-[var(--text-tertiary)]">
+                Try another group, difficulty, or search term.
+              </p>
+              {hasActiveSkillFilters && (
+                <button
+                  type="button"
+                  onClick={clearSkillFilters}
+                  className="mt-4 inline-flex h-9 items-center gap-2 rounded-[18px] bg-[var(--accent)] px-4 text-[10px] font-semibold text-white"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Reset filters
+                </button>
+              )}
             </div>
           ) : (
             matchingSkills.map((skill, index) => {
