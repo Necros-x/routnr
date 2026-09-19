@@ -10,6 +10,7 @@ export const CreateRoutineModal: React.FC = () => {
   const {
     isCreateRoutineModalOpen,
     setCreateRoutineModalOpen,
+    createRoutineInitialApparatus,
     createRoutine,
     openRoutineInBuilder,
   } = useGymnasticsStore();
@@ -20,6 +21,11 @@ export const CreateRoutineModal: React.FC = () => {
 
   useEffect(() => {
     if (!isCreateRoutineModalOpen) return;
+
+    if (createRoutineInitialApparatus) {
+      setSelectedApparatus(createRoutineInitialApparatus);
+    }
+
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKeyDown = (event: KeyboardEvent) => {
@@ -30,7 +36,11 @@ export const CreateRoutineModal: React.FC = () => {
       document.body.style.overflow = previous;
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [isCreateRoutineModalOpen, setCreateRoutineModalOpen]);
+  }, [
+    createRoutineInitialApparatus,
+    isCreateRoutineModalOpen,
+    setCreateRoutineModalOpen,
+  ]);
 
   if (!isCreateRoutineModalOpen) return null;
 
