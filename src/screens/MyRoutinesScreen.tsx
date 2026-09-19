@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pin, Plus, Trash2 } from 'lucide-react';
+import { Crown, Plus, Trash2 } from 'lucide-react';
 import { AllAroundSummaryCard } from '../components/AllAroundSummaryCard';
 import { MAG_APPARATUS_CODES, MAG_APPARATUS_ORDER } from '../config/mag';
 import { useGymnasticsStore } from '../hooks/useGymnasticsStore';
@@ -171,7 +171,7 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({
                               : 'Set as main routine'
                           }
                         >
-                          <Pin
+                          <Crown
                             className="h-3.5 w-3.5"
                             fill={primary ? 'currentColor' : 'none'}
                           />
