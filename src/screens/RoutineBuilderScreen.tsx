@@ -409,8 +409,6 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
                     </button>
                   </div>
 
-                      </div>
-
                       <div className="mt-3 flex items-center justify-between gap-2 pl-[4.75rem]">
                     <button
                       type="button"
