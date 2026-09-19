@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence, Reorder, useDragControls } from 'motion/react';
 import {
   AlertTriangle,
   ArrowLeft,
   Check,
   ChevronDown,
   ChevronUp,
+  GripVertical,
   Link2,
   Plus,
   Search,
@@ -14,9 +15,43 @@ import {
 import { AppToast } from '../components/AppToast';
 import { useGymnasticsStore } from '../hooks/useGymnasticsStore';
 import { DIFFICULTY_LEVELS } from '../data/mockSkills';
+import type { RoutineSkill } from '../types/gymnastics';
 
 interface RoutineBuilderScreenProps {
   onBack: () => void;
+}
+
+type RoutineDragControls = ReturnType<typeof useDragControls>;
+
+function DraggableRoutineItem({
+  value,
+  children,
+}: {
+  value: string;
+  children: (controls: RoutineDragControls) => React.ReactNode;
+}) {
+  const controls = useDragControls();
+
+  return (
+    <Reorder.Item
+      value={value}
+      dragListener={false}
+      dragControls={controls}
+      className="list-none"
+      whileDrag={{
+        scale: 1.015,
+        zIndex: 40,
+        boxShadow: '0 18px 40px rgba(28, 28, 25, 0.12)',
+      }}
+      transition={{
+        type: 'spring',
+        stiffness: 420,
+        damping: 34,
+      }}
+    >
+      {children(controls)}
+    </Reorder.Item>
+  );
 }
 
 export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
@@ -30,6 +65,8 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
     removeSkillFromRoutine,
     updateSkillConnectionBonus,
     moveSkillOrder,
+    reorderRoutineSkills,
+    restoreRoutineSkill,
     updateRoutineTitle,
     updateRoutineNotes,
     setSelectedSkill,
@@ -42,9 +79,15 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
   const [difficulty, setDifficulty] = useState('All');
   const [title, setTitle] = useState(routine?.name ?? '');
   const [notes, setNotes] = useState(routine?.notes ?? '');
-  const [toast, setToast] = useState<{ id: number; message: string } | null>(
-    null,
-  );
+  const [toast, setToast] = useState<{
+    id: number;
+    message: string;
+    undo?: {
+      routineId: string;
+      item: RoutineSkill;
+      index: number;
+    };
+  } | null>(null);
 
   useEffect(() => {
     setTitle(routine?.name ?? '');
@@ -283,7 +326,15 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
               </p>
             </div>
           ) : (
-            routine.skills.map((item, index) => {
+            <Reorder.Group
+              axis="y"
+              values={routine.skills.map((item) => item.instanceId)}
+              onReorder={(orderedIds) =>
+                reorderRoutineSkills(routine.id, orderedIds)
+              }
+              className="m-0 list-none p-0"
+            >
+              {routine.skills.map((item, index) => {
               const connectionBonus = item.connectionBonus || 0;
               const isRepeated = repeatedIds.has(item.instanceId);
               const isReserve = reserveIds.has(item.instanceId);
@@ -298,16 +349,31 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
                     : 'Added';
 
               return (
-                <div
+                <DraggableRoutineItem
                   key={item.instanceId}
-                  className={`p-3.5 sm:p-4 ${
-                    index > 0 ? 'border-t border-[var(--border-subtle)]' : ''
-                  }`}
+                  value={item.instanceId}
                 >
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[var(--surface-soft)] text-[10px] font-bold text-[var(--text-tertiary)]">
-                      {index + 1}
-                    </span>
+                  {(dragControls) => (
+                    <div
+                      className={`bg-white p-3.5 sm:p-4 ${
+                        index > 0
+                          ? 'border-t border-[var(--border-subtle)]'
+                          : ''
+                      }`}
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <button
+                          type="button"
+                          onPointerDown={(event) => dragControls.start(event)}
+                          className="flex h-9 w-7 shrink-0 touch-none items-center justify-center rounded-[12px] text-[var(--text-tertiary)] hover:bg-[var(--surface-soft)] hover:text-[var(--text-primary)]"
+                          aria-label={`Drag to reorder ${item.skill.name}`}
+                        >
+                          <GripVertical className="h-4 w-4" />
+                        </button>
+
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-[var(--surface-soft)] text-[10px] font-bold text-[var(--text-tertiary)]">
+                          {index + 1}
+                        </span>
 
                     <button
                       type="button"
@@ -343,7 +409,9 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
                     </button>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between gap-2 pl-12">
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between gap-2 pl-[4.75rem]">
                     <button
                       type="button"
                       onClick={() =>
@@ -394,7 +462,15 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
                             routine.id,
                             item.instanceId,
                           );
-                          showToast('Skill removed');
+                          setToast({
+                            id: Date.now(),
+                            message: 'Skill removed',
+                            undo: {
+                              routineId: routine.id,
+                              item,
+                              index,
+                            },
+                          });
                         }}
                         className="flex h-8 w-8 items-center justify-center rounded-[16px] text-[var(--text-tertiary)] hover:bg-[#fff1f1] hover:text-[var(--danger)]"
                         aria-label={`Remove ${item.skill.name}`}
@@ -402,10 +478,13 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                  </div>
-                </div>
+                      </div>
+                    </div>
+                  )}
+                </DraggableRoutineItem>
               );
-            })
+            })}
+            </Reorder.Group>
           )}
         </div>
       </section>
@@ -541,6 +620,22 @@ export const RoutineBuilderScreen: React.FC<RoutineBuilderScreenProps> = ({
           <AppToast
             key={toast.id}
             message={toast.message}
+            actionLabel={toast.undo ? 'Undo' : undefined}
+            onAction={
+              toast.undo
+                ? () => {
+                    restoreRoutineSkill(
+                      toast.undo!.routineId,
+                      toast.undo!.item,
+                      toast.undo!.index,
+                    );
+                    setToast({
+                      id: Date.now(),
+                      message: 'Skill restored',
+                    });
+                  }
+                : undefined
+            }
             onDone={() => setToast(null)}
           />
         )}
