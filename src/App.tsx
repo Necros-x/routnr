@@ -15,6 +15,7 @@ import { ProfileModal } from './components/ProfileModal';
 import { SettingsModal } from './components/SettingsModal';
 import { APP_CONFIG } from './config/app';
 import { OFFLINE_STORAGE_KEY } from './config/code';
+import { POPUP_INITIAL_Y, POPUP_SPRING } from './config/motion';
 import type { ActiveTab } from './types/gymnastics';
 
 const NAV_SLIDE = {
@@ -209,10 +210,10 @@ function MainAppContent() {
       <AnimatePresence>
         {menuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+            initial={{ opacity: 0, y: POPUP_INITIAL_Y, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, y: 32, scale: 0.98 }}
+            transition={POPUP_SPRING}
             className="glass-float backdrop-blur-[2px] fixed inset-x-4 bottom-[88px] z-40 mx-auto max-w-md rounded-[24px] p-3"
           >
             <button
