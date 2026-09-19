@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 import { Plus, X } from 'lucide-react';
 import { useGymnasticsStore } from '../hooks/useGymnasticsStore';
 import { ALL_APPARATUS } from '../data/mockSkills';
 import { Apparatus } from '../types/gymnastics';
+import { POPUP_INITIAL_Y, POPUP_SPRING } from '../config/motion';
 
 export const CreateRoutineModal: React.FC = () => {
   const {
@@ -47,7 +49,10 @@ export const CreateRoutineModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/20 p-0 backdrop-blur-[5px] sm:items-center sm:p-5" onMouseDown={() => setCreateRoutineModalOpen(false)}>
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: POPUP_INITIAL_Y, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={POPUP_SPRING}
         role="dialog"
         aria-modal="true"
         aria-label="Create routine"
@@ -121,7 +126,7 @@ export const CreateRoutineModal: React.FC = () => {
             Create and open builder
           </button>
         </form>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
