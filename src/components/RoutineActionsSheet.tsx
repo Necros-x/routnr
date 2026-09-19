@@ -130,7 +130,7 @@ export function RoutineActionsSheet({
               <Trash2 className="h-4 w-4" />
               <div>
                 <p className="text-sm font-semibold">Delete routine</p>
-                <p className="mt-0.5 text-[10px] text-[var(--danger)]/70">
+                <p className="mt-0.5 text-[10px] text-[var(--danger)] opacity-70">
                   This removes it from this device
                 </p>
               </div>
