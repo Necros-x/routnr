@@ -1,6 +1,7 @@
-import React from 'react';
-import { Crown, Plus, Trash2 } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Crown, MoreHorizontal, Plus } from 'lucide-react';
 import { AllAroundSummaryCard } from '../components/AllAroundSummaryCard';
+import { RoutineActionsSheet } from '../components/RoutineActionsSheet';
 import { MAG_APPARATUS_CODES, MAG_APPARATUS_ORDER } from '../config/mag';
 import { useGymnasticsStore } from '../hooks/useGymnasticsStore';
 
@@ -14,13 +15,20 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({
   const {
     routines,
     deleteRoutine,
-    setCreateRoutineModalOpen,
+    duplicateRoutine,
+    openCreateRoutineModal,
     setPrimaryRoutine,
     isPrimaryRoutine,
     getAllAroundSummary,
   } = useGymnasticsStore();
 
+  const [actionRoutineId, setActionRoutineId] = useState<string | null>(null);
+
   const allAround = getAllAroundSummary();
+  const actionRoutine = useMemo(
+    () => routines.find((routine) => routine.id === actionRoutineId) ?? null,
+    [actionRoutineId, routines],
+  );
 
   return (
     <div className="space-y-7">
@@ -36,7 +44,7 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({
 
         <button
           type="button"
-          onClick={() => setCreateRoutineModalOpen(true)}
+          onClick={() => openCreateRoutineModal()}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[20px] bg-[var(--accent)] text-white"
           aria-label="Create routine"
         >
@@ -71,7 +79,7 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({
                   </span>
                   <button
                     type="button"
-                    onClick={() => setCreateRoutineModalOpen(true)}
+                    onClick={() => openCreateRoutineModal(apparatus)}
                     className="flex h-8 w-8 items-center justify-center rounded-[16px] border border-[var(--border-medium)] bg-white text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     aria-label={`Add ${apparatus} routine`}
                   >
@@ -83,7 +91,7 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({
               {eventRoutines.length === 0 ? (
                 <button
                   type="button"
-                  onClick={() => setCreateRoutineModalOpen(true)}
+                  onClick={() => openCreateRoutineModal(apparatus)}
                   className="flex min-h-[110px] w-full items-center justify-center rounded-[22px] border border-dashed border-[var(--border-medium)] bg-white/55 px-4 text-xs font-medium text-[var(--text-tertiary)]"
                 >
                   <Plus className="mr-2 h-4 w-4" />
@@ -179,15 +187,11 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({
 
                         <button
                           type="button"
-                          onClick={() => {
-                            if (window.confirm(`Delete “${routine.name}”?`)) {
-                              deleteRoutine(routine.id);
-                            }
-                          }}
-                          className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-[16px] text-[var(--text-tertiary)] opacity-100 transition-colors hover:bg-[#fff1f1] hover:text-[var(--danger)] sm:opacity-0 sm:group-hover:opacity-100"
-                          aria-label={`Delete ${routine.name}`}
+                          onClick={() => setActionRoutineId(routine.id)}
+                          className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-[16px] text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-soft)] hover:text-[var(--text-primary)]"
+                          aria-label={`More actions for ${routine.name}`}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <MoreHorizontal className="h-4 w-4" />
                         </button>
                       </div>
                     );
@@ -198,6 +202,17 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({
           );
         })}
       </div>
+
+      <RoutineActionsSheet
+        routine={actionRoutine}
+        isOpen={Boolean(actionRoutine)}
+        onClose={() => setActionRoutineId(null)}
+        onOpen={onOpenBuilder}
+        onDuplicate={(routineId) => {
+          duplicateRoutine(routineId);
+        }}
+        onDelete={deleteRoutine}
+      />
     </div>
   );
 };
