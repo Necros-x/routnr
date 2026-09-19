@@ -1,6 +1,8 @@
 'use client';
+import { POPUP_INITIAL_Y, POPUP_SPRING } from '../config/motion';
 
 import React, { useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 import {
   CheckCircle2,
   Download,
@@ -264,11 +266,17 @@ export function DownloadManagerModal({
     : null;
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.16, ease: 'easeOut' }}
       className="fixed inset-0 z-[100] flex items-end justify-center bg-black/15 p-0 backdrop-blur-[5px] sm:items-center sm:p-5"
       onMouseDown={onClose}
     >
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: POPUP_INITIAL_Y, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={POPUP_SPRING}
         role="dialog"
         aria-modal="true"
         aria-label="Download manager"
@@ -390,7 +398,7 @@ export function DownloadManagerModal({
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
