@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import {
   Bookmark,
   ExternalLink,
@@ -12,6 +13,7 @@ import {
   CODE_FIGURE_BASE_PATH,
   MAG_CODE_PDF_URL,
 } from '../config/code';
+import { POPUP_INITIAL_Y, POPUP_SPRING } from '../config/motion';
 
 export const SkillDetailModal: React.FC = () => {
   const {
@@ -86,11 +88,17 @@ export const SkillDetailModal: React.FC = () => {
     `${selectedSkill.name} Code of Points illustration`;
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.16, ease: 'easeOut' }}
       className="fixed inset-0 z-[90] flex items-end justify-center bg-black/20 p-0 backdrop-blur-[5px] sm:items-center sm:p-5"
       onMouseDown={() => setSelectedSkill(null)}
     >
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: POPUP_INITIAL_Y, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={POPUP_SPRING}
         role="dialog"
         aria-modal="true"
         aria-label={selectedSkill.name}
@@ -315,7 +323,7 @@ export const SkillDetailModal: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
