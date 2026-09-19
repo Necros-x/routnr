@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import { AnimatePresence } from 'motion/react';
 import { Crown, MoreHorizontal, Plus } from 'lucide-react';
 import { AllAroundSummaryCard } from '../components/AllAroundSummaryCard';
+import { AppToast } from '../components/AppToast';
 import { RoutineActionsSheet } from '../components/RoutineActionsSheet';
 import { MAG_APPARATUS_CODES, MAG_APPARATUS_ORDER } from '../config/mag';
 import { useGymnasticsStore } from '../hooks/useGymnasticsStore';
@@ -16,6 +18,7 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({
     routines,
     deleteRoutine,
     duplicateRoutine,
+    updateRoutineTitle,
     openCreateRoutineModal,
     setPrimaryRoutine,
     isPrimaryRoutine,
@@ -23,6 +26,13 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({
   } = useGymnasticsStore();
 
   const [actionRoutineId, setActionRoutineId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ id: number; message: string } | null>(
+    null,
+  );
+
+  const showToast = (message: string) => {
+    setToast({ id: Date.now(), message });
+  };
 
   const allAround = getAllAroundSummary();
   const actionRoutine = useMemo(
@@ -92,10 +102,19 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => openCreateRoutineModal(apparatus)}
-                  className="flex min-h-[110px] w-full items-center justify-center rounded-[22px] border border-dashed border-[var(--border-medium)] bg-white/55 px-4 text-xs font-medium text-[var(--text-tertiary)]"
+                  className="flex min-h-[120px] w-full items-center justify-between gap-4 rounded-[22px] border border-dashed border-[var(--border-medium)] bg-white/55 px-4 py-4 text-left transition-colors hover:bg-white/75"
                 >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add a {apparatus} routine
+                  <div>
+                    <p className="text-xs font-semibold text-[var(--text-primary)]">
+                      No {MAG_APPARATUS_CODES[apparatus]} routine yet
+                    </p>
+                    <p className="mt-1 max-w-sm text-[10px] leading-4 text-[var(--text-tertiary)]">
+                      Create one to add {apparatus} to your All Around summary.
+                    </p>
+                  </div>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[18px] bg-[var(--accent)] text-white">
+                    <Plus className="h-4 w-4" />
+                  </span>
                 </button>
               ) : (
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
@@ -162,7 +181,12 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({
 
                         <button
                           type="button"
-                          onClick={() => setPrimaryRoutine(routine.id)}
+                          onClick={() => {
+                            setPrimaryRoutine(routine.id);
+                            showToast(
+                              `${MAG_APPARATUS_CODES[apparatus]} main routine selected`,
+                            );
+                          }}
                           className={`absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-[16px] border transition-colors ${
                             primary
                               ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
@@ -209,10 +233,28 @@ export const MyRoutinesScreen: React.FC<MyRoutinesScreenProps> = ({
         onClose={() => setActionRoutineId(null)}
         onOpen={onOpenBuilder}
         onDuplicate={(routineId) => {
-          duplicateRoutine(routineId);
+          const duplicateId = duplicateRoutine(routineId);
+          if (duplicateId) showToast('Routine duplicated');
         }}
-        onDelete={deleteRoutine}
+        onRename={(routineId, name) => {
+          updateRoutineTitle(routineId, name);
+          showToast('Routine renamed');
+        }}
+        onDelete={(routineId) => {
+          deleteRoutine(routineId);
+          showToast('Routine deleted');
+        }}
       />
+
+      <AnimatePresence>
+        {toast && (
+          <AppToast
+            key={toast.id}
+            message={toast.message}
+            onDone={() => setToast(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
