@@ -1,11 +1,11 @@
 import { Routine, RoutineSkill } from '../types/gymnastics';
-import { MOCK_SKILLS } from './mockSkills';
+import { MAG_SKILLS } from './mag/catalog';
 import { calculateRoutineScore, calculateDynamicDScore } from '../utils/scoreCalculator';
 
 export { calculateRoutineScore, calculateDynamicDScore };
 
 const getSkillById = (id: string) => {
-  const found = MOCK_SKILLS.find((s) => s.id === id);
+  const found = MAG_SKILLS.find((s) => s.id === id);
   if (!found) throw new Error(`Skill ${id} not found`);
   return found;
 };
@@ -20,48 +20,48 @@ export const MOCK_ROUTINES: Routine[] = [
     skills: [
       {
         instanceId: 'fx-inst-1',
-        skillId: 'fx-01',
-        skill: getSkillById('fx-01'),
+        skillId: 'fx-iii-054',
+        skill: getSkillById('fx-iii-054'),
         order: 1,
-        connectionBonus: 0.2,
-        notes: 'Punch straight out of corner',
+        connectionBonus: 0.0,
+        notes: 'Opening pass',
       },
       {
         instanceId: 'fx-inst-2',
-        skillId: 'fx-03',
-        skill: getSkillById('fx-03'),
+        skillId: 'fx-ii-016',
+        skill: getSkillById('fx-ii-016'),
         order: 2,
-        connectionBonus: 0.1,
+        connectionBonus: 0.0,
       },
       {
         instanceId: 'fx-inst-3',
-        skillId: 'fx-05',
-        skill: getSkillById('fx-05'),
+        skillId: 'fx-i-027',
+        skill: getSkillById('fx-i-027'),
         order: 3,
         connectionBonus: 0.0,
-        notes: 'Hold full 2 seconds clean lockout',
+        notes: 'Show the hold clearly',
       },
       {
         instanceId: 'fx-inst-4',
-        skillId: 'fx-02',
-        skill: getSkillById('fx-02'),
+        skillId: 'fx-iv-022',
+        skill: getSkillById('fx-iv-022'),
         order: 4,
         connectionBonus: 0.0,
       },
       {
         instanceId: 'fx-inst-5',
-        skillId: 'fx-04',
-        skill: getSkillById('fx-04'),
+        skillId: 'fx-iii-060',
+        skill: getSkillById('fx-iii-060'),
         order: 5,
-        connectionBonus: 0.1,
-        notes: 'Anchor final landing without hop',
+        connectionBonus: 0.0,
+        notes: 'Demo element only — arrange according to your routine',
       },
     ],
     summary: {
-      difficultyValue: 2.1,
-      elementGroupValue: 1.5,
-      connectionBonus: 0.4,
-      totalDScore: 4.0,
+      difficultyValue: 2.6,
+      elementGroupValue: 2.0,
+      connectionBonus: 0.0,
+      totalDScore: 4.6,
     },
   },
   {
