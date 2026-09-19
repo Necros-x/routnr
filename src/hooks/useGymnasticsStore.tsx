@@ -55,6 +55,12 @@ interface GymnasticsStoreContextValue {
   updateSkillConnectionBonus: (routineId: string, instanceId: string, connectionBonus: number) => void;
   moveSkillOrder: (routineId: string, index: number, direction: 'up' | 'down') => void;
   reorderSkills: (routineId: string, startIndex: number, endIndex: number) => void;
+  reorderRoutineSkills: (routineId: string, orderedInstanceIds: string[]) => void;
+  restoreRoutineSkill: (
+    routineId: string,
+    item: RoutineSkill,
+    index: number,
+  ) => void;
   calculateActiveRoutineDScore: () => DynamicDScoreResult;
   getActiveRoutine: () => Routine | null;
   openRoutineInBuilder: (id: string) => void;
@@ -438,6 +444,67 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
     );
   };
 
+  const reorderRoutineSkills = (
+    routineId: string,
+    orderedInstanceIds: string[],
+  ) => {
+    setRoutines((prev) =>
+      prev.map((routine) => {
+        if (routine.id !== routineId) return routine;
+
+        const byId = new Map(
+          routine.skills.map((item) => [item.instanceId, item]),
+        );
+
+        const ordered = orderedInstanceIds
+          .map((instanceId) => byId.get(instanceId))
+          .filter((item): item is RoutineSkill => Boolean(item));
+
+        if (ordered.length !== routine.skills.length) return routine;
+
+        const updated = ordered.map((item, index) => ({
+          ...item,
+          order: index + 1,
+        }));
+
+        return {
+          ...routine,
+          skills: updated,
+          summary: calculateRoutineScore(updated, routine.apparatus),
+          lastEdited: 'Just now',
+        };
+      }),
+    );
+  };
+
+  const restoreRoutineSkill = (
+    routineId: string,
+    item: RoutineSkill,
+    index: number,
+  ) => {
+    setRoutines((prev) =>
+      prev.map((routine) => {
+        if (routine.id !== routineId) return routine;
+
+        const insertAt = Math.max(0, Math.min(index, routine.skills.length));
+        const nextSkills = [...routine.skills];
+        nextSkills.splice(insertAt, 0, item);
+
+        const updated = nextSkills.map((skill, nextIndex) => ({
+          ...skill,
+          order: nextIndex + 1,
+        }));
+
+        return {
+          ...routine,
+          skills: updated,
+          summary: calculateRoutineScore(updated, routine.apparatus),
+          lastEdited: 'Just now',
+        };
+      }),
+    );
+  };
+
   const getActiveRoutine = (): Routine | null => {
     if (!activeRoutineId) return routines[0] || null;
     return routines.find((r) => r.id === activeRoutineId) || routines[0] || null;
@@ -553,6 +620,8 @@ export const GymnasticsStoreProvider: React.FC<{ children: React.ReactNode }> = 
         updateSkillConnectionBonus,
         moveSkillOrder,
         reorderSkills,
+        reorderRoutineSkills,
+        restoreRoutineSkill,
         calculateActiveRoutineDScore,
         getActiveRoutine,
         openRoutineInBuilder,
