@@ -23,7 +23,7 @@ export const SkillDetailModal: React.FC = () => {
     toggleFavorite,
     routines,
     addSkillToRoutine,
-    setCreateRoutineModalOpen,
+    openCreateRoutineModal,
     skills,
   } = useGymnasticsStore();
 
@@ -285,7 +285,7 @@ export const SkillDetailModal: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setSelectedSkill(null);
-                  setCreateRoutineModalOpen(true);
+                  openCreateRoutineModal(selectedSkill.apparatus);
                 }}
                 className="shrink-0 rounded-full bg-[var(--accent)] px-4 py-2.5 text-xs font-semibold text-white"
               >
